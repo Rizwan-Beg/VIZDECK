@@ -1,0 +1,17 @@
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
+import { FaqAccordion } from "@/components/FaqAccordion";
+import { PageShell } from "@/components/PageShell";
+import { PricingCards } from "@/components/PricingCards";
+import { Reveal } from "@/components/Reveal";
+
+const pricingFaqs = [
+  { question: "Is there an affordable starting plan?", answer: "Yes. VIZDECK Starter is $20 per month for a focused public rug-visualizer experience. It is designed so independent rug sellers can start without an enterprise-sized commitment." },
+  { question: "What does the Rug Visualizer include?", answer: "The product includes our WebGL room editor with supplied rooms, custom room upload, rug selection, floor-aware placement controls and visual export. Production scope can include custom catalogue feeds, branding and storefront integration." },
+  { question: "Can we start with one collection?", answer: "Yes. Start with a focused collection or one visualizer entry point on Starter, then move to Business when your team needs branded rollout guidance and broader collection support." },
+  { question: "Are Shopify and WooCommerce connectors included today?", answer: "No. Those connectors are planned, not currently advertised as active. Existing sites can be assessed for a custom embedded visualizer integration." },
+];
+
+export default function PricingPage() {
+  return <PageShell><div className="v-page"><section className="v-pricing-hero"><Reveal><div className="v-eyebrow" style={{justifyContent:"center"}}>Rug visualisation plans</div><h1 className="v-display">Make room visualisation <em>affordable.</em></h1><p className="v-lede">Start with a real rug visualizer for $20/month. Upgrade only when your catalogue, branding or implementation needs grow.</p></Reveal></section><section className="v-section v-section--paper v-section--tight"><div style={{textAlign:"center",marginBottom:30}}><Reveal><div className="v-eyebrow" style={{justifyContent:"center"}}>Simple monthly plans</div></Reveal><PricingCards/></div></section><section className="v-section v-section--mint"><div className="v-product-story"><Reveal className="v-product-story__copy"><div className="v-eyebrow">A deliberate rollout</div><h2 className="v-heading">Start with the rug collection that needs <em>more confidence.</em></h2><p className="v-lede">Begin with a live visualizer, a defined collection and the right customer entry point. Expand once the experience is working in the way your team needs.</p></Reveal><Reveal className="v-media-window v-media-window--room" delay={.1}><div className="v-rug-visual"/><span className="v-media-window__label">A focused rug launch · from $20/month</span></Reveal></div></section><section className="v-section v-section--paper"><Reveal><div className="v-eyebrow">Pricing notes</div><h2 className="v-heading">Useful questions, answered <em>early.</em></h2></Reveal><FaqAccordion items={pricingFaqs}/></section><section className="v-section v-section--blush"><div className="v-cta"><Reveal><div className="v-eyebrow">Find the right starting point</div><h2 className="v-heading">Bring your rug collection into <em>the conversation.</em></h2></Reveal><Reveal className="v-cta__aside"><p className="v-lede">Start with Starter at $20/month, or tell us about a more tailored room-visualisation rollout.</p><Link className="v-button v-button--primary" href="/contact">Talk to VIZDECK <ArrowUpRight size={15}/></Link></Reveal></div></section></div></PageShell>;
+}

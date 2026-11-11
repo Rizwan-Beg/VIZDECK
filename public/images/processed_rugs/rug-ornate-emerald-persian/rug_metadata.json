@@ -1,0 +1,59 @@
+{
+  "rug_id": "rug-ornate-emerald-persian",
+  "name": "Ornate Emerald Persian Rug",
+  "nominal_size_label": "8 \u00d7 10 ft",
+  "physical_dimensions": {
+    "width_ft": 8.0,
+    "length_ft": 10.0,
+    "width_m": 2.4384,
+    "length_m": 3.048,
+    "fringe_included_in_dimensions": false,
+    "standard_industry_note": "Declared dimensions define the woven body. Fringe extends outward by ~2-3 inches at ends."
+  },
+  "geometry": {
+    "original_resolution": [
+      1086,
+      1448
+    ],
+    "cropped_resolution": [
+      1057,
+      1448
+    ],
+    "crop_box_original": [
+      14,
+      0,
+      1071,
+      1448
+    ],
+    "body_box_in_crop": [
+      10,
+      44,
+      1047,
+      1388
+    ],
+    "aspect_ratio_cropped": 0.73,
+    "aspect_ratio_body": 0.7716
+  },
+  "components": {
+    "has_fringe": true,
+    "has_top_fringe": true,
+    "has_bottom_fringe": true,
+    "fringe_top_length_px": 44,
+    "fringe_bottom_length_px": 60,
+    "assets": {
+      "complete_rug": "rug_transparent.png",
+      "rug_body": "rug_body.png",
+      "fringe_top": "fringe_top.png",
+      "fringe_bottom": "fringe_bottom.png",
+      "fringe_mask": "fringe_mask.png",
+      "binding_mask": "binding_mask.png"
+    }
+  },
+  "pipeline": {
+    "model": "ZhengPeng7/BiRefNet_HR-matting",
+    "matting_mode": "High-Resolution Neural Matting with Sub-Pixel Fiber Transmission",
+    "alpha_format": "Straight RGBA (Unpremultiplied)",
+    "despill_applied": true,
+    "anti_aliasing": "Antialiased continuous partial transparency"
+  }
+}

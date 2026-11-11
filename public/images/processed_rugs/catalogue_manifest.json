@@ -1,0 +1,753 @@
+[
+  {
+    "rug_id": "rug-navy-medallion-oriental",
+    "name": "Intricate Navy Medallion Oriental Rug",
+    "nominal_size_label": "8 \u00d7 10 ft",
+    "physical_dimensions": {
+      "width_ft": 8.0,
+      "length_ft": 10.0,
+      "width_m": 2.4384,
+      "length_m": 3.048,
+      "fringe_included_in_dimensions": false,
+      "standard_industry_note": "Declared dimensions define the woven body. Fringe extends outward by ~2-3 inches at ends."
+    },
+    "geometry": {
+      "original_resolution": [
+        1086,
+        1448
+      ],
+      "cropped_resolution": [
+        1047,
+        1448
+      ],
+      "crop_box_original": [
+        19,
+        0,
+        1066,
+        1448
+      ],
+      "body_box_in_crop": [
+        10,
+        52,
+        1037,
+        1358
+      ],
+      "aspect_ratio_cropped": 0.7231,
+      "aspect_ratio_body": 0.7864
+    },
+    "components": {
+      "has_fringe": true,
+      "has_top_fringe": true,
+      "has_bottom_fringe": true,
+      "fringe_top_length_px": 52,
+      "fringe_bottom_length_px": 90,
+      "assets": {
+        "complete_rug": "rug_transparent.png",
+        "rug_body": "rug_body.png",
+        "fringe_top": "fringe_top.png",
+        "fringe_bottom": "fringe_bottom.png",
+        "fringe_mask": "fringe_mask.png",
+        "binding_mask": "binding_mask.png"
+      }
+    },
+    "pipeline": {
+      "model": "ZhengPeng7/BiRefNet_HR-matting",
+      "matting_mode": "High-Resolution Neural Matting with Sub-Pixel Fiber Transmission",
+      "alpha_format": "Straight RGBA (Unpremultiplied)",
+      "despill_applied": true,
+      "anti_aliasing": "Antialiased continuous partial transparency"
+    }
+  },
+  {
+    "rug_id": "rug-embroidered-cranes-blossoms",
+    "name": "Embroidered Cranes and Blossoms Rug",
+    "nominal_size_label": "6 \u00d7 9 ft",
+    "physical_dimensions": {
+      "width_ft": 6.0,
+      "length_ft": 9.0,
+      "width_m": 1.8288,
+      "length_m": 2.7432,
+      "fringe_included_in_dimensions": false,
+      "standard_industry_note": "Declared dimensions define the woven body. Fringe extends outward by ~2-3 inches at ends."
+    },
+    "geometry": {
+      "original_resolution": [
+        1086,
+        1448
+      ],
+      "cropped_resolution": [
+        1065,
+        1448
+      ],
+      "crop_box_original": [
+        10,
+        0,
+        1075,
+        1448
+      ],
+      "body_box_in_crop": [
+        10,
+        43,
+        1055,
+        1391
+      ],
+      "aspect_ratio_cropped": 0.7355,
+      "aspect_ratio_body": 0.7752
+    },
+    "components": {
+      "has_fringe": true,
+      "has_top_fringe": true,
+      "has_bottom_fringe": true,
+      "fringe_top_length_px": 43,
+      "fringe_bottom_length_px": 57,
+      "assets": {
+        "complete_rug": "rug_transparent.png",
+        "rug_body": "rug_body.png",
+        "fringe_top": "fringe_top.png",
+        "fringe_bottom": "fringe_bottom.png",
+        "fringe_mask": "fringe_mask.png",
+        "binding_mask": "binding_mask.png"
+      }
+    },
+    "pipeline": {
+      "model": "ZhengPeng7/BiRefNet_HR-matting",
+      "matting_mode": "High-Resolution Neural Matting with Sub-Pixel Fiber Transmission",
+      "alpha_format": "Straight RGBA (Unpremultiplied)",
+      "despill_applied": true,
+      "anti_aliasing": "Antialiased continuous partial transparency"
+    }
+  },
+  {
+    "rug_id": "rug-ornate-emerald-persian",
+    "name": "Ornate Emerald Persian Rug",
+    "nominal_size_label": "8 \u00d7 10 ft",
+    "physical_dimensions": {
+      "width_ft": 8.0,
+      "length_ft": 10.0,
+      "width_m": 2.4384,
+      "length_m": 3.048,
+      "fringe_included_in_dimensions": false,
+      "standard_industry_note": "Declared dimensions define the woven body. Fringe extends outward by ~2-3 inches at ends."
+    },
+    "geometry": {
+      "original_resolution": [
+        1086,
+        1448
+      ],
+      "cropped_resolution": [
+        1057,
+        1448
+      ],
+      "crop_box_original": [
+        14,
+        0,
+        1071,
+        1448
+      ],
+      "body_box_in_crop": [
+        10,
+        44,
+        1047,
+        1388
+      ],
+      "aspect_ratio_cropped": 0.73,
+      "aspect_ratio_body": 0.7716
+    },
+    "components": {
+      "has_fringe": true,
+      "has_top_fringe": true,
+      "has_bottom_fringe": true,
+      "fringe_top_length_px": 44,
+      "fringe_bottom_length_px": 60,
+      "assets": {
+        "complete_rug": "rug_transparent.png",
+        "rug_body": "rug_body.png",
+        "fringe_top": "fringe_top.png",
+        "fringe_bottom": "fringe_bottom.png",
+        "fringe_mask": "fringe_mask.png",
+        "binding_mask": "binding_mask.png"
+      }
+    },
+    "pipeline": {
+      "model": "ZhengPeng7/BiRefNet_HR-matting",
+      "matting_mode": "High-Resolution Neural Matting with Sub-Pixel Fiber Transmission",
+      "alpha_format": "Straight RGBA (Unpremultiplied)",
+      "despill_applied": true,
+      "anti_aliasing": "Antialiased continuous partial transparency"
+    }
+  },
+  {
+    "rug_id": "rug-ornate-pastel-ottoman-floral",
+    "name": "Ornate Pastel Ottoman Floral Rug",
+    "nominal_size_label": "8 \u00d7 10 ft",
+    "physical_dimensions": {
+      "width_ft": 8.0,
+      "length_ft": 10.0,
+      "width_m": 2.4384,
+      "length_m": 3.048,
+      "fringe_included_in_dimensions": false,
+      "standard_industry_note": "Declared dimensions define the woven body. Fringe extends outward by ~2-3 inches at ends."
+    },
+    "geometry": {
+      "original_resolution": [
+        1086,
+        1448
+      ],
+      "cropped_resolution": [
+        1042,
+        1431
+      ],
+      "crop_box_original": [
+        22,
+        7,
+        1064,
+        1438
+      ],
+      "body_box_in_crop": [
+        10,
+        44,
+        1032,
+        1375
+      ],
+      "aspect_ratio_cropped": 0.7282,
+      "aspect_ratio_body": 0.7678
+    },
+    "components": {
+      "has_fringe": true,
+      "has_top_fringe": true,
+      "has_bottom_fringe": true,
+      "fringe_top_length_px": 44,
+      "fringe_bottom_length_px": 56,
+      "assets": {
+        "complete_rug": "rug_transparent.png",
+        "rug_body": "rug_body.png",
+        "fringe_top": "fringe_top.png",
+        "fringe_bottom": "fringe_bottom.png",
+        "fringe_mask": "fringe_mask.png",
+        "binding_mask": "binding_mask.png"
+      }
+    },
+    "pipeline": {
+      "model": "ZhengPeng7/BiRefNet_HR-matting",
+      "matting_mode": "High-Resolution Neural Matting with Sub-Pixel Fiber Transmission",
+      "alpha_format": "Straight RGBA (Unpremultiplied)",
+      "despill_applied": true,
+      "anti_aliasing": "Antialiased continuous partial transparency"
+    }
+  },
+  {
+    "rug_id": "rug-persian-ruby-navy-medallion",
+    "name": "Ornate Persian Rug with Navy Medallion",
+    "nominal_size_label": "8 \u00d7 10 ft",
+    "physical_dimensions": {
+      "width_ft": 8.0,
+      "length_ft": 10.0,
+      "width_m": 2.4384,
+      "length_m": 3.048,
+      "fringe_included_in_dimensions": false,
+      "standard_industry_note": "Declared dimensions define the woven body. Fringe extends outward by ~2-3 inches at ends."
+    },
+    "geometry": {
+      "original_resolution": [
+        1086,
+        1448
+      ],
+      "cropped_resolution": [
+        1055,
+        1428
+      ],
+      "crop_box_original": [
+        14,
+        8,
+        1069,
+        1436
+      ],
+      "body_box_in_crop": [
+        10,
+        41,
+        1045,
+        1371
+      ],
+      "aspect_ratio_cropped": 0.7388,
+      "aspect_ratio_body": 0.7782
+    },
+    "components": {
+      "has_fringe": true,
+      "has_top_fringe": true,
+      "has_bottom_fringe": true,
+      "fringe_top_length_px": 41,
+      "fringe_bottom_length_px": 57,
+      "assets": {
+        "complete_rug": "rug_transparent.png",
+        "rug_body": "rug_body.png",
+        "fringe_top": "fringe_top.png",
+        "fringe_bottom": "fringe_bottom.png",
+        "fringe_mask": "fringe_mask.png",
+        "binding_mask": "binding_mask.png"
+      }
+    },
+    "pipeline": {
+      "model": "ZhengPeng7/BiRefNet_HR-matting",
+      "matting_mode": "High-Resolution Neural Matting with Sub-Pixel Fiber Transmission",
+      "alpha_format": "Straight RGBA (Unpremultiplied)",
+      "despill_applied": true,
+      "anti_aliasing": "Antialiased continuous partial transparency"
+    }
+  },
+  {
+    "rug_id": "rug-afghan-blue-medallion",
+    "name": "Ornate Afghan Blue Medallion Rug",
+    "nominal_size_label": "6 \u00d7 9 ft",
+    "physical_dimensions": {
+      "width_ft": 6.0,
+      "length_ft": 9.0,
+      "width_m": 1.8288,
+      "length_m": 2.7432,
+      "fringe_included_in_dimensions": false,
+      "standard_industry_note": "Declared dimensions define the woven body. Fringe extends outward by ~2-3 inches at ends."
+    },
+    "geometry": {
+      "original_resolution": [
+        1086,
+        1448
+      ],
+      "cropped_resolution": [
+        1053,
+        1432
+      ],
+      "crop_box_original": [
+        16,
+        6,
+        1069,
+        1438
+      ],
+      "body_box_in_crop": [
+        10,
+        36,
+        1043,
+        1379
+      ],
+      "aspect_ratio_cropped": 0.7353,
+      "aspect_ratio_body": 0.7692
+    },
+    "components": {
+      "has_fringe": true,
+      "has_top_fringe": true,
+      "has_bottom_fringe": true,
+      "fringe_top_length_px": 36,
+      "fringe_bottom_length_px": 53,
+      "assets": {
+        "complete_rug": "rug_transparent.png",
+        "rug_body": "rug_body.png",
+        "fringe_top": "fringe_top.png",
+        "fringe_bottom": "fringe_bottom.png",
+        "fringe_mask": "fringe_mask.png",
+        "binding_mask": "binding_mask.png"
+      }
+    },
+    "pipeline": {
+      "model": "ZhengPeng7/BiRefNet_HR-matting",
+      "matting_mode": "High-Resolution Neural Matting with Sub-Pixel Fiber Transmission",
+      "alpha_format": "Straight RGBA (Unpremultiplied)",
+      "despill_applied": true,
+      "anti_aliasing": "Antialiased continuous partial transparency"
+    }
+  },
+  {
+    "rug_id": "rug-moroccan-berber-diamond",
+    "name": "Moroccan Berber Diamond Medallion Rug",
+    "nominal_size_label": "6 \u00d7 9 ft",
+    "physical_dimensions": {
+      "width_ft": 6.0,
+      "length_ft": 9.0,
+      "width_m": 1.8288,
+      "length_m": 2.7432,
+      "fringe_included_in_dimensions": false,
+      "standard_industry_note": "Declared dimensions define the woven body. Fringe extends outward by ~2-3 inches at ends."
+    },
+    "geometry": {
+      "original_resolution": [
+        1086,
+        1448
+      ],
+      "cropped_resolution": [
+        1048,
+        1430
+      ],
+      "crop_box_original": [
+        19,
+        8,
+        1067,
+        1438
+      ],
+      "body_box_in_crop": [
+        10,
+        49,
+        1038,
+        1373
+      ],
+      "aspect_ratio_cropped": 0.7329,
+      "aspect_ratio_body": 0.7764
+    },
+    "components": {
+      "has_fringe": true,
+      "has_top_fringe": true,
+      "has_bottom_fringe": true,
+      "fringe_top_length_px": 49,
+      "fringe_bottom_length_px": 57,
+      "assets": {
+        "complete_rug": "rug_transparent.png",
+        "rug_body": "rug_body.png",
+        "fringe_top": "fringe_top.png",
+        "fringe_bottom": "fringe_bottom.png",
+        "fringe_mask": "fringe_mask.png",
+        "binding_mask": "binding_mask.png"
+      }
+    },
+    "pipeline": {
+      "model": "ZhengPeng7/BiRefNet_HR-matting",
+      "matting_mode": "High-Resolution Neural Matting with Sub-Pixel Fiber Transmission",
+      "alpha_format": "Straight RGBA (Unpremultiplied)",
+      "despill_applied": true,
+      "anti_aliasing": "Antialiased continuous partial transparency"
+    }
+  },
+  {
+    "rug_id": "rug-geometric-rust-blue-diamond",
+    "name": "Geometric Rust and Blue Diamond Rug",
+    "nominal_size_label": "8 \u00d7 10 ft",
+    "physical_dimensions": {
+      "width_ft": 8.0,
+      "length_ft": 10.0,
+      "width_m": 2.4384,
+      "length_m": 3.048,
+      "fringe_included_in_dimensions": false,
+      "standard_industry_note": "Declared dimensions define the woven body. Fringe extends outward by ~2-3 inches at ends."
+    },
+    "geometry": {
+      "original_resolution": [
+        1086,
+        1448
+      ],
+      "cropped_resolution": [
+        1049,
+        1427
+      ],
+      "crop_box_original": [
+        19,
+        9,
+        1068,
+        1436
+      ],
+      "body_box_in_crop": [
+        10,
+        40,
+        1039,
+        1374
+      ],
+      "aspect_ratio_cropped": 0.7351,
+      "aspect_ratio_body": 0.7714
+    },
+    "components": {
+      "has_fringe": true,
+      "has_top_fringe": true,
+      "has_bottom_fringe": true,
+      "fringe_top_length_px": 40,
+      "fringe_bottom_length_px": 53,
+      "assets": {
+        "complete_rug": "rug_transparent.png",
+        "rug_body": "rug_body.png",
+        "fringe_top": "fringe_top.png",
+        "fringe_bottom": "fringe_bottom.png",
+        "fringe_mask": "fringe_mask.png",
+        "binding_mask": "binding_mask.png"
+      }
+    },
+    "pipeline": {
+      "model": "ZhengPeng7/BiRefNet_HR-matting",
+      "matting_mode": "High-Resolution Neural Matting with Sub-Pixel Fiber Transmission",
+      "alpha_format": "Straight RGBA (Unpremultiplied)",
+      "despill_applied": true,
+      "anti_aliasing": "Antialiased continuous partial transparency"
+    }
+  },
+  {
+    "rug_id": "rug-colorful-oriental-patchwork",
+    "name": "Colorful Oriental Garden Patchwork Rug",
+    "nominal_size_label": "8 \u00d7 10 ft",
+    "physical_dimensions": {
+      "width_ft": 8.0,
+      "length_ft": 10.0,
+      "width_m": 2.4384,
+      "length_m": 3.048,
+      "fringe_included_in_dimensions": false,
+      "standard_industry_note": "Declared dimensions define the woven body. Fringe extends outward by ~2-3 inches at ends."
+    },
+    "geometry": {
+      "original_resolution": [
+        1086,
+        1448
+      ],
+      "cropped_resolution": [
+        1061,
+        1448
+      ],
+      "crop_box_original": [
+        12,
+        0,
+        1073,
+        1448
+      ],
+      "body_box_in_crop": [
+        10,
+        44,
+        1051,
+        1390
+      ],
+      "aspect_ratio_cropped": 0.7327,
+      "aspect_ratio_body": 0.7734
+    },
+    "components": {
+      "has_fringe": true,
+      "has_top_fringe": true,
+      "has_bottom_fringe": true,
+      "fringe_top_length_px": 44,
+      "fringe_bottom_length_px": 58,
+      "assets": {
+        "complete_rug": "rug_transparent.png",
+        "rug_body": "rug_body.png",
+        "fringe_top": "fringe_top.png",
+        "fringe_bottom": "fringe_bottom.png",
+        "fringe_mask": "fringe_mask.png",
+        "binding_mask": "binding_mask.png"
+      }
+    },
+    "pipeline": {
+      "model": "ZhengPeng7/BiRefNet_HR-matting",
+      "matting_mode": "High-Resolution Neural Matting with Sub-Pixel Fiber Transmission",
+      "alpha_format": "Straight RGBA (Unpremultiplied)",
+      "despill_applied": true,
+      "anti_aliasing": "Antialiased continuous partial transparency"
+    }
+  },
+  {
+    "rug_id": "rug-abstract-geometric-amoeba",
+    "name": "Abstract Geometric Amoeba Rug",
+    "nominal_size_label": "8 \u00d7 10 ft",
+    "physical_dimensions": {
+      "width_ft": 8.0,
+      "length_ft": 10.0,
+      "width_m": 2.4384,
+      "length_m": 3.048,
+      "fringe_included_in_dimensions": false,
+      "standard_industry_note": "Declared dimensions define the woven body. Fringe extends outward by ~2-3 inches at ends."
+    },
+    "geometry": {
+      "original_resolution": [
+        1143,
+        1376
+      ],
+      "cropped_resolution": [
+        1131,
+        1363
+      ],
+      "crop_box_original": [
+        6,
+        6,
+        1137,
+        1369
+      ],
+      "body_box_in_crop": [
+        0,
+        0,
+        1131,
+        1363
+      ],
+      "aspect_ratio_cropped": 0.8298,
+      "aspect_ratio_body": 0.8298
+    },
+    "components": {
+      "has_fringe": false,
+      "has_top_fringe": false,
+      "has_bottom_fringe": false,
+      "fringe_top_length_px": 0,
+      "fringe_bottom_length_px": 0,
+      "assets": {
+        "complete_rug": "rug_transparent.png",
+        "rug_body": "rug_body.png"
+      }
+    },
+    "pipeline": {
+      "model": "ZhengPeng7/BiRefNet_HR-matting",
+      "matting_mode": "High-Resolution Neural Matting with Sub-Pixel Fiber Transmission",
+      "alpha_format": "Straight RGBA (Unpremultiplied)",
+      "despill_applied": true,
+      "anti_aliasing": "Antialiased continuous partial transparency"
+    }
+  },
+  {
+    "rug_id": "rug-emerald-wave-petal",
+    "name": "Emerald Wave Petal Round Rug",
+    "nominal_size_label": "8 \u00d7 10 ft",
+    "physical_dimensions": {
+      "width_ft": 8.0,
+      "length_ft": 10.0,
+      "width_m": 2.4384,
+      "length_m": 3.048,
+      "fringe_included_in_dimensions": false,
+      "standard_industry_note": "Declared dimensions define the woven body. Fringe extends outward by ~2-3 inches at ends."
+    },
+    "geometry": {
+      "original_resolution": [
+        1254,
+        1254
+      ],
+      "cropped_resolution": [
+        1237,
+        1236
+      ],
+      "crop_box_original": [
+        7,
+        8,
+        1244,
+        1244
+      ],
+      "body_box_in_crop": [
+        0,
+        0,
+        1237,
+        1236
+      ],
+      "aspect_ratio_cropped": 1.0008,
+      "aspect_ratio_body": 1.0008
+    },
+    "components": {
+      "has_fringe": false,
+      "has_top_fringe": false,
+      "has_bottom_fringe": false,
+      "fringe_top_length_px": 0,
+      "fringe_bottom_length_px": 0,
+      "assets": {
+        "complete_rug": "rug_transparent.png",
+        "rug_body": "rug_body.png"
+      }
+    },
+    "pipeline": {
+      "model": "ZhengPeng7/BiRefNet_HR-matting",
+      "matting_mode": "High-Resolution Neural Matting with Sub-Pixel Fiber Transmission",
+      "alpha_format": "Straight RGBA (Unpremultiplied)",
+      "despill_applied": true,
+      "anti_aliasing": "Antialiased continuous partial transparency"
+    }
+  },
+  {
+    "rug_id": "rug-abstract-teal-wave-oval",
+    "name": "Abstract Teal Wave Pattern Oval Rug",
+    "nominal_size_label": "8 \u00d7 10 ft",
+    "physical_dimensions": {
+      "width_ft": 8.0,
+      "length_ft": 10.0,
+      "width_m": 2.4384,
+      "length_m": 3.048,
+      "fringe_included_in_dimensions": false,
+      "standard_industry_note": "Declared dimensions define the woven body. Fringe extends outward by ~2-3 inches at ends."
+    },
+    "geometry": {
+      "original_resolution": [
+        1082,
+        1454
+      ],
+      "cropped_resolution": [
+        1082,
+        1454
+      ],
+      "crop_box_original": [
+        0,
+        0,
+        1082,
+        1454
+      ],
+      "body_box_in_crop": [
+        0,
+        0,
+        1082,
+        1454
+      ],
+      "aspect_ratio_cropped": 0.7442,
+      "aspect_ratio_body": 0.7442
+    },
+    "components": {
+      "has_fringe": false,
+      "has_top_fringe": false,
+      "has_bottom_fringe": false,
+      "fringe_top_length_px": 0,
+      "fringe_bottom_length_px": 0,
+      "assets": {
+        "complete_rug": "rug_transparent.png",
+        "rug_body": "rug_body.png"
+      }
+    },
+    "pipeline": {
+      "model": "ZhengPeng7/BiRefNet_HR-matting",
+      "matting_mode": "High-Resolution Neural Matting with Sub-Pixel Fiber Transmission",
+      "alpha_format": "Straight RGBA (Unpremultiplied)",
+      "despill_applied": true,
+      "anti_aliasing": "Antialiased continuous partial transparency"
+    }
+  },
+  {
+    "rug_id": "rug-modern-midcentury-geometric",
+    "name": "Modern Mid-Century Geometric Rug",
+    "nominal_size_label": "8 \u00d7 10 ft",
+    "physical_dimensions": {
+      "width_ft": 8.0,
+      "length_ft": 10.0,
+      "width_m": 2.4384,
+      "length_m": 3.048,
+      "fringe_included_in_dimensions": false,
+      "standard_industry_note": "Declared dimensions define the woven body. Fringe extends outward by ~2-3 inches at ends."
+    },
+    "geometry": {
+      "original_resolution": [
+        1086,
+        1448
+      ],
+      "cropped_resolution": [
+        1025,
+        1428
+      ],
+      "crop_box_original": [
+        31,
+        8,
+        1056,
+        1436
+      ],
+      "body_box_in_crop": [
+        0,
+        0,
+        1025,
+        1428
+      ],
+      "aspect_ratio_cropped": 0.7178,
+      "aspect_ratio_body": 0.7178
+    },
+    "components": {
+      "has_fringe": false,
+      "has_top_fringe": false,
+      "has_bottom_fringe": false,
+      "fringe_top_length_px": 0,
+      "fringe_bottom_length_px": 0,
+      "assets": {
+        "complete_rug": "rug_transparent.png",
+        "rug_body": "rug_body.png"
+      }
+    },
+    "pipeline": {
+      "model": "ZhengPeng7/BiRefNet_HR-matting",
+      "matting_mode": "High-Resolution Neural Matting with Sub-Pixel Fiber Transmission",
+      "alpha_format": "Straight RGBA (Unpremultiplied)",
+      "despill_applied": true,
+      "anti_aliasing": "Antialiased continuous partial transparency"
+    }
+  }
+]

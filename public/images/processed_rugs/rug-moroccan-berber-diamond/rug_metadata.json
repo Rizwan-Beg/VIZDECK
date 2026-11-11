@@ -1,0 +1,59 @@
+{
+  "rug_id": "rug-moroccan-berber-diamond",
+  "name": "Moroccan Berber Diamond Medallion Rug",
+  "nominal_size_label": "6 \u00d7 9 ft",
+  "physical_dimensions": {
+    "width_ft": 6.0,
+    "length_ft": 9.0,
+    "width_m": 1.8288,
+    "length_m": 2.7432,
+    "fringe_included_in_dimensions": false,
+    "standard_industry_note": "Declared dimensions define the woven body. Fringe extends outward by ~2-3 inches at ends."
+  },
+  "geometry": {
+    "original_resolution": [
+      1086,
+      1448
+    ],
+    "cropped_resolution": [
+      1048,
+      1430
+    ],
+    "crop_box_original": [
+      19,
+      8,
+      1067,
+      1438
+    ],
+    "body_box_in_crop": [
+      10,
+      49,
+      1038,
+      1373
+    ],
+    "aspect_ratio_cropped": 0.7329,
+    "aspect_ratio_body": 0.7764
+  },
+  "components": {
+    "has_fringe": true,
+    "has_top_fringe": true,
+    "has_bottom_fringe": true,
+    "fringe_top_length_px": 49,
+    "fringe_bottom_length_px": 57,
+    "assets": {
+      "complete_rug": "rug_transparent.png",
+      "rug_body": "rug_body.png",
+      "fringe_top": "fringe_top.png",
+      "fringe_bottom": "fringe_bottom.png",
+      "fringe_mask": "fringe_mask.png",
+      "binding_mask": "binding_mask.png"
+    }
+  },
+  "pipeline": {
+    "model": "ZhengPeng7/BiRefNet_HR-matting",
+    "matting_mode": "High-Resolution Neural Matting with Sub-Pixel Fiber Transmission",
+    "alpha_format": "Straight RGBA (Unpremultiplied)",
+    "despill_applied": true,
+    "anti_aliasing": "Antialiased continuous partial transparency"
+  }
+}
