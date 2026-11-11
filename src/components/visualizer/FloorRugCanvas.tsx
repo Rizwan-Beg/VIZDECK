@@ -56,7 +56,6 @@ type Props = {
   onOccludeClick: (pt: Vec2, add: boolean) => void;
 };
 
-const DIV = 32;
 const VERT_STRIDE = 4; // x, y, u, v
 
 const VS = `
@@ -65,6 +64,20 @@ attribute vec2 a_uv;
 varying vec2 v_uv;
 void main() {
   gl_Position = vec4(a_pos, 0.0, 1.0);
+  v_uv = a_uv;
+}
+`;
+
+// Homogeneous floor-metre -> clip-space vertex shader so triangles extending toward
+// or past the camera plane (w <= 0) undergo exact GPU frustum clipping with perspective-correct 1/W UVs.
+const VS_RUG = `
+attribute vec2 a_pos;
+attribute vec2 a_uv;
+uniform mat3 u_clipH;
+varying vec2 v_uv;
+void main() {
+  vec3 clip = u_clipH * vec3(a_pos, 1.0);
+  gl_Position = vec4(clip.xy, 0.0, clip.z);
   v_uv = a_uv;
 }
 `;
@@ -96,12 +109,13 @@ void main() {
   // Discard fragments outside the photograph bounds
   if (ruv.x < 0.0 || ruv.x > 1.0 || ruv.y < 0.0 || ruv.y > 1.0) discard;
 
-  // Discard fragments on walls, baseboards, or beyond the visible floor
+  // Respect the segmented floor support mask across recesses, doorways, and wall seams;
+  // fall back to far wall horizon only when no floor support mask is available.
   if (u_hasFloorSupport > 0.5) {
     float sup = texture2D(u_floorSupport, ruv).r;
     if (sup < 0.15) discard;
   } else {
-    if (ruv.y < u_horizonY) discard;
+    if (ruv.y < u_horizonY - 0.004) discard;
   }
 
   vec3 room = texture2D(u_room, ruv).rgb;
@@ -212,15 +226,91 @@ function compile(gl: WebGLRenderingContext, type: number, src: string) {
   return s;
 }
 
-function program(gl: WebGLRenderingContext, fs: string) {
+function program(gl: WebGLRenderingContext, fs: string, vs: string = VS) {
   const p = gl.createProgram()!;
-  gl.attachShader(p, compile(gl, gl.VERTEX_SHADER, VS));
+  gl.attachShader(p, compile(gl, gl.VERTEX_SHADER, vs));
   gl.attachShader(p, compile(gl, gl.FRAGMENT_SHADER, fs));
   gl.linkProgram(p);
   if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
     throw new Error(gl.getProgramInfoLog(p) || "link failed");
   }
   return p;
+}
+
+type RugVert = { x: number; y: number; u: number; v: number };
+
+function evalFloorW(H: number[], p: Vec2, wSign: number): number {
+  return (H[6] * p.x + H[7] * p.y + H[8]) * wSign;
+}
+
+/**
+ * Sutherland-Hodgman clip of a convex floor-space quad (with attached rug UVs)
+ * against w >= wMin so every vertex sent to WebGL has strictly positive clip W.
+ */
+function clipRugPolyToPositiveW(
+  corners: Vec2[],
+  H: number[],
+  wSign: number,
+  wMin = 0.02
+): RugVert[] {
+  const poly: RugVert[] = [
+    { x: corners[0].x, y: corners[0].y, u: 0, v: 0 },
+    { x: corners[1].x, y: corners[1].y, u: 1, v: 0 },
+    { x: corners[2].x, y: corners[2].y, u: 1, v: 1 },
+    { x: corners[3].x, y: corners[3].y, u: 0, v: 1 },
+  ];
+  const out: RugVert[] = [];
+  for (let i = 0; i < poly.length; i++) {
+    const cur = poly[i];
+    const nxt = poly[(i + 1) % poly.length];
+    const wc = evalFloorW(H, cur, wSign);
+    const wn = evalFloorW(H, nxt, wSign);
+    const inC = wc >= wMin;
+    const inN = wn >= wMin;
+    if (inC && inN) {
+      out.push(nxt);
+    } else if (inC && !inN) {
+      const t = (wMin - wc) / (wn - wc);
+      out.push({
+        x: cur.x + (nxt.x - cur.x) * t,
+        y: cur.y + (nxt.y - cur.y) * t,
+        u: cur.u + (nxt.u - cur.u) * t,
+        v: cur.v + (nxt.v - cur.v) * t,
+      });
+    } else if (!inC && inN) {
+      const t = (wMin - wc) / (wn - wc);
+      out.push({
+        x: cur.x + (nxt.x - cur.x) * t,
+        y: cur.y + (nxt.y - cur.y) * t,
+        u: cur.u + (nxt.u - cur.u) * t,
+        v: cur.v + (nxt.v - cur.v) * t,
+      });
+      out.push(nxt);
+    }
+  }
+  return out;
+}
+
+function clipSegmentToPositiveW(
+  a: Vec2,
+  b: Vec2,
+  H: number[],
+  wSign: number,
+  wMin = 0.02
+): [Vec2, Vec2] | null {
+  const wa = evalFloorW(H, a, wSign);
+  const wb = evalFloorW(H, b, wSign);
+  if (wa < wMin && wb < wMin) return null;
+  let p0 = a;
+  let p1 = b;
+  if (wa < wMin) {
+    const t = (wMin - wa) / (wb - wa);
+    p0 = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+  } else if (wb < wMin) {
+    const t = (wMin - wa) / (wb - wa);
+    p1 = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+  }
+  return [p0, p1];
 }
 
 function pxToClip(x: number, y: number, w: number, h: number): Vec2 {
@@ -432,16 +522,27 @@ export default function FloorRugCanvas({
     if (!inv || !layout) return null;
     const imgPt = canvasToImage(canvasPt, layout);
 
-    // Safeguard against projection singularity near/above horizon when dragging into wall
-    const w = inv[6] * imgPt.x + inv[7] * imgPt.y + inv[8];
-    if (w <= 0.035) {
-      const depthM = sizeRef.current.depthFt * FT_TO_M;
-      const widthM = sizeRef.current.widthFt * FT_TO_M;
-      const xOffset = (imgPt.x - 0.5) * widthM * 2.8 + widthM * 0.5;
-      return { x: xOffset, y: depthM * 2.5 };
+    // Smoothly clamp near/above the horizon line so dragging up onto the far wall tracks
+    // continuously without snapping to infinity or inverting across w = 0.
+    const wSignInv = inv[6] * 0.5 + inv[7] * 0.85 + inv[8] < 0 ? -1 : 1;
+    const minW = 0.14;
+    let samplePt = imgPt;
+    const w = (inv[6] * samplePt.x + inv[7] * samplePt.y + inv[8]) * wSignInv;
+    if (w < minW) {
+      const denom = inv[7] * wSignInv;
+      if (Math.abs(denom) > 1e-6) {
+        samplePt = {
+          x: samplePt.x,
+          y: (minW - (inv[6] * samplePt.x + inv[8]) * wSignInv) / denom,
+        };
+      } else {
+        const depthM = sizeRef.current.depthFt * FT_TO_M;
+        const widthM = sizeRef.current.widthFt * FT_TO_M;
+        return { x: (imgPt.x - 0.5) * widthM * 2.8 + widthM * 0.5, y: depthM * 2.2 };
+      }
     }
 
-    const floorPt = applyH(inv, imgPt);
+    const floorPt = applyH(inv, samplePt);
     if (!Number.isFinite(floorPt.x) || !Number.isFinite(floorPt.y)) return null;
     return floorPt;
   }, []);
@@ -506,6 +607,34 @@ export default function FloorRugCanvas({
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.disable(gl.DEPTH_TEST);
 
+    const wSign = H
+      ? ((H[6] * ((sizeRef.current.widthFt * FT_TO_M) / 2) +
+          H[7] * ((sizeRef.current.depthFt * FT_TO_M) / 2) +
+          H[8]) < 0
+          ? -1
+          : 1)
+      : 1;
+
+    const clipMat = H
+      ? (() => {
+          const ax = (2 * layout.w) / cssW;
+          const bx = (2 * layout.x) / cssW - 1;
+          const ay = (-2 * layout.h) / cssH;
+          const by = 1 - (2 * layout.y) / cssH;
+          const m00 = (ax * H[0] + bx * H[6]) * wSign;
+          const m01 = (ax * H[1] + bx * H[7]) * wSign;
+          const m02 = (ax * H[2] + bx * H[8]) * wSign;
+          const m10 = (ay * H[3] + by * H[6]) * wSign;
+          const m11 = (ay * H[4] + by * H[7]) * wSign;
+          const m12 = (ay * H[5] + by * H[8]) * wSign;
+          const m20 = H[6] * wSign;
+          const m21 = H[7] * wSign;
+          const m22 = H[8] * wSign;
+          // Column-major order for GLSL mat3 u_clipH
+          return new Float32Array([m00, m10, m20, m01, m11, m21, m02, m12, m22]);
+        })()
+      : null;
+
     const bindTexProg = (light = true) => {
       gl.useProgram(texP);
       const aPosTex = gl.getAttribLocation(texP, "a_pos");
@@ -515,6 +644,9 @@ export default function FloorRugCanvas({
       gl.vertexAttribPointer(aPosTex, 2, gl.FLOAT, false, 16, 0);
       gl.enableVertexAttribArray(aUvTex);
       gl.vertexAttribPointer(aUvTex, 2, gl.FLOAT, false, 16, 8);
+      if (clipMat) {
+        gl.uniformMatrix3fv(gl.getUniformLocation(texP, "u_clipH"), false, clipMat);
+      }
       gl.uniform4f(gl.getUniformLocation(texP, "u_layout"), layout.x, layout.y, layout.w, layout.h);
       gl.uniform2f(gl.getUniformLocation(texP, "u_css"), cssW, cssH);
       gl.uniform1f(gl.getUniformLocation(texP, "u_dpr"), dpr);
@@ -613,55 +745,28 @@ export default function FloorRugCanvas({
       pushGrid();
     }
 
-    const tessellate = (cornersFloorM: Vec2[], expand = 0, offsetZ = 0) => {
-      if (!H) return null;
+    const buildRugMesh = (cornersFloorM: Vec2[], expand = 0, offsetZ = 0) => {
+      if (!H || !clipMat) return null;
+      const c = {
+        x: (cornersFloorM[0].x + cornersFloorM[1].x + cornersFloorM[2].x + cornersFloorM[3].x) / 4,
+        y: (cornersFloorM[0].y + cornersFloorM[1].y + cornersFloorM[2].y + cornersFloorM[3].y) / 4,
+      };
+      const adj = cornersFloorM.map((p) => ({
+        x: expand ? c.x + (p.x - c.x) * (1 + expand) : p.x,
+        y: (expand ? c.y + (p.y - c.y) * (1 + expand) : p.y) + offsetZ,
+      }));
+      const clipped = clipRugPolyToPositiveW(adj, H, wSign, 0.02);
+      if (clipped.length < 3) return null;
       const verts: number[] = [];
-      const pts: Vec2[][] = [];
-      for (let j = 0; j <= DIV; j++) {
-        const row: Vec2[] = [];
-        const v = j / DIV;
-        for (let i = 0; i <= DIV; i++) {
-          const u = i / DIV;
-          const a = 1 - u;
-          const b = 1 - v;
-          // bilinear in physical floor space (metres), then homography -> perspective
-          const p = {
-            x: cornersFloorM[0].x * a * b + cornersFloorM[1].x * u * b + cornersFloorM[2].x * u * v + cornersFloorM[3].x * a * v,
-            y: cornersFloorM[0].y * a * b + cornersFloorM[1].y * u * b + cornersFloorM[2].y * u * v + cornersFloorM[3].y * a * v,
-          };
-          
-          if (offsetZ) {
-            p.y += offsetZ; // Offset along the floor depth
-          }
-
-          if (expand) {
-            const c = {
-              x: (cornersFloorM[0].x + cornersFloorM[1].x + cornersFloorM[2].x + cornersFloorM[3].x) / 4,
-              y: (cornersFloorM[0].y + cornersFloorM[1].y + cornersFloorM[2].y + cornersFloorM[3].y) / 4,
-            };
-            p.x = c.x + (p.x - c.x) * (1 + expand);
-            p.y = c.y + (p.y - c.y) * (1 + expand);
-          }
-          const scr = projectFloor(p);
-          if (!scr) return null;
-          row.push(pxToClip(scr.x, scr.y, cssW, cssH));
-        }
-        pts.push(row);
-      }
-      for (let j = 0; j < DIV; j++) {
-        for (let i = 0; i < DIV; i++) {
-          const u0 = i / DIV, u1 = (i + 1) / DIV;
-          const v0 = j / DIV, v1 = (j + 1) / DIV;
-          const a = pts[j][i], b = pts[j][i + 1], c = pts[j + 1][i + 1], d = pts[j + 1][i];
-          verts.push(
-            a.x, a.y, u0, v0,
-            b.x, b.y, u1, v0,
-            d.x, d.y, u0, v1,
-            b.x, b.y, u1, v0,
-            c.x, c.y, u1, v1,
-            d.x, d.y, u0, v1
-          );
-        }
+      for (let i = 1; i < clipped.length - 1; i++) {
+        const v0 = clipped[0];
+        const v1 = clipped[i];
+        const v2 = clipped[i + 1];
+        verts.push(
+          v0.x, v0.y, v0.u, v0.v,
+          v1.x, v1.y, v1.u, v1.v,
+          v2.x, v2.y, v2.u, v2.v
+        );
       }
       return new Float32Array(verts);
     };
@@ -670,8 +775,8 @@ export default function FloorRugCanvas({
       const corners = rugFloorCornersM(rug);
       const zNorm = Math.min(1, Math.max(0, (rug.zM ?? (rug.z * FT_TO_M)) / (sizeRef.current.depthFt * FT_TO_M)));
       const shade = 1 - zNorm * 0.22;
-      
-      const mesh = tessellate(corners);
+
+      const mesh = buildRugMesh(corners);
       const tex = texCache.current.get(rug.img);
       if (mesh && tex) {
         upload(mesh);
@@ -683,11 +788,13 @@ export default function FloorRugCanvas({
         gl.uniform1i(gl.getUniformLocation(texP, "u_tex"), 0);
         gl.drawArrays(gl.TRIANGLES, 0, mesh.length / VERT_STRIDE);
       }
-      if (rug.instanceId === selectedRef.current) {
+      if (rug.instanceId === selectedRef.current && H) {
         const outline: number[] = [];
         for (let i = 0; i < 4; i++) {
-          const a = projectFloor(corners[i]);
-          const b = projectFloor(corners[(i + 1) % 4]);
+          const seg = clipSegmentToPositiveW(corners[i], corners[(i + 1) % 4], H, wSign, 0.02);
+          if (!seg) continue;
+          const a = projectFloor(seg[0]);
+          const b = projectFloor(seg[1]);
           if (!a || !b) continue;
           const ca = pxToClip(a.x, a.y, cssW, cssH);
           const cb = pxToClip(b.x, b.y, cssW, cssH);
@@ -699,10 +806,18 @@ export default function FloorRugCanvas({
           gl.uniform4f(gl.getUniformLocation(solP, "u_color"), 0.48, 0.05, 0.07, 0.9);
           gl.drawArrays(gl.LINES, 0, outline.length / 4);
         }
-        const scr = corners.map((c) => projectFloor(c)).filter(Boolean) as Vec2[];
-        if (scr.length === 4) {
-          const cen = polygonCentroid(scr);
-          const next = { x: cen.x, y: Math.max(...scr.map((p) => p.y)) + 14 };
+        const visPoly = clipRugPolyToPositiveW(corners, H, wSign, 0.02);
+        const visScr = visPoly.map((v) => projectFloor(v)).filter(Boolean) as Vec2[];
+        if (visScr.length >= 3) {
+          const onCanvas = visScr.map((p) => ({
+            x: Math.min(Math.max(p.x, 4), Math.max(4, cssW - 4)),
+            y: Math.min(Math.max(p.y, 4), Math.max(4, cssH - 4)),
+          }));
+          const cen = polygonCentroid(onCanvas);
+          const next = {
+            x: Math.min(Math.max(cen.x, 70), Math.max(70, cssW - 70)),
+            y: Math.min(Math.max(...onCanvas.map((p) => p.y)) + 14, Math.max(48, cssH - 64)),
+          };
           if (Number.isFinite(next.x) && Number.isFinite(next.y)) {
             const key = `${selectedRef.current}:${next.x.toFixed(1)}:${next.y.toFixed(1)}`;
             if (lastTbRef.current !== key) {
@@ -710,7 +825,7 @@ export default function FloorRugCanvas({
               onToolbarRef.current(next);
             }
           }
-          const top = scr.reduce((a, p) => (p.y < a.y ? p : a), scr[0]);
+          const top = onCanvas.reduce((a, p) => (p.y < a.y ? p : a), onCanvas[0]);
           const rh = {
             x: Math.min(Math.max(top.x, 20), Math.max(20, cssW - 20)),
             y: Math.min(Math.max(top.y - 24, 20), Math.max(20, cssH - 20)),
@@ -722,6 +837,11 @@ export default function FloorRugCanvas({
               setRotHandle(rh);
             }
           }
+        } else if (lastTbRef.current !== "") {
+          lastTbRef.current = "";
+          onToolbarRef.current(null);
+          lastRhRef.current = "";
+          setRotHandle(null);
         }
       }
     }
@@ -779,7 +899,7 @@ export default function FloorRugCanvas({
     });
     if (!gl) return;
     glRef.current = gl;
-    texProg.current = program(gl, FS_TEX);
+    texProg.current = program(gl, FS_TEX, VS_RUG);
     roomProg.current = program(gl, FS_ROOM);
     solidProg.current = program(gl, FS_SOLID);
     occProg.current = program(gl, FS_OCCLUDE);

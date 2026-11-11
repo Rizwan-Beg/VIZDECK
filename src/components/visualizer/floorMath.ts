@@ -76,8 +76,8 @@ export type PlacedRug = {
 
 export function defaultFloorQuad(): FloorQuad {
   return {
-    farLeft: { x: 0.31, y: 0.67 },
-    farRight: { x: 0.69, y: 0.67 },
+    farLeft: { x: 0.286, y: 0.66 },
+    farRight: { x: 0.714, y: 0.66 },
     nearRight: { x: 0.98, y: 0.995 },
     nearLeft: { x: 0.02, y: 0.995 },
   };
@@ -127,16 +127,9 @@ export function fitRoomLayout(
   imgW: number,
   imgH: number
 ): ImageLayout {
-  const canvasAspect = canvasW / Math.max(1, canvasH);
-  const imgAspect = imgW / Math.max(1, imgH);
-  const aspectMismatch = Math.max(canvasAspect / imgAspect, imgAspect / canvasAspect);
-
-  // On narrow/mobile screens or when photo orientation differs sharply from the canvas,
-  // contain the full photo so walls, furniture, and floor edges aren't cropped off.
-  if (canvasW < 768 || aspectMismatch > 1.38) {
-    return containLayout(canvasW, canvasH, imgW, imgH);
-  }
-  return coverLayout(canvasW, canvasH, imgW, imgH);
+  // Always contain the full room photo so walls, furniture, and foreground floor up to the
+  // camera edge remain visible and coverable on every desktop and mobile aspect ratio.
+  return containLayout(canvasW, canvasH, imgW, imgH);
 }
 
 export function imageToCanvas(p: Vec2, layout: ImageLayout): Vec2 {
@@ -491,7 +484,7 @@ export function clampRugM(
   rug: PlacedRug,
   floorBoundsM: { widthM: number; depthM: number }
 ): PlacedRug {
-  const pad = 0.10; // 10 cm margin
+  const pad = 0.02; // 2 cm margin so rugs can sit flush near the front wall and foreground edge
   const rot = Number.isFinite(rug.rot) ? rug.rot : 0;
   const c = Math.abs(Math.cos(rot));
   const s = Math.abs(Math.sin(rot));
@@ -502,10 +495,24 @@ export function clampRugM(
   const halfEffectiveWidthM = (rugW_M * c + rugL_M * s) / 2.0;
   const halfEffectiveLengthM = (rugW_M * s + rugL_M * c) / 2.0;
 
-  const minX = halfEffectiveWidthM + pad;
-  const maxX = Math.max(minX, floorBoundsM.widthM - halfEffectiveWidthM - pad);
-  const minZ = halfEffectiveLengthM + pad;
-  const maxZ = Math.max(minZ, floorBoundsM.depthM - halfEffectiveLengthM - pad);
+  const fitMinX = halfEffectiveWidthM + pad;
+  const fitMaxX = floorBoundsM.widthM - halfEffectiveWidthM - pad;
+  // When the rug is wider than the calibrated floor bay, keep it centered while allowing natural lateral reach.
+  const flexX = Math.max(0.35, floorBoundsM.widthM * 0.40);
+  const minX = fitMinX <= fitMaxX ? fitMinX : Math.max(0.10, floorBoundsM.widthM / 2.0 - flexX);
+  const maxX = fitMinX <= fitMaxX ? fitMaxX : Math.min(floorBoundsM.widthM - 0.10, floorBoundsM.widthM / 2.0 + flexX);
+
+  const fitMinZ = halfEffectiveLengthM + pad;
+  const fitMaxZ = floorBoundsM.depthM - halfEffectiveLengthM - pad;
+  // For deep rugs (e.g. 10x14 or 12x18 in a shorter bay), allow extending to both far wall and camera edge;
+  // homogeneous clip-space rendering handles near vertices crossing behind w <= 0 safely.
+  const maxSafeNearOverhang = Math.max(2.4, floorBoundsM.depthM * 0.85);
+  const minZ = fitMinZ <= fitMaxZ
+    ? fitMinZ
+    : Math.max(floorBoundsM.depthM * 0.08, halfEffectiveLengthM - maxSafeNearOverhang);
+  const maxZ = fitMinZ <= fitMaxZ
+    ? fitMaxZ
+    : Math.max(minZ, floorBoundsM.depthM * 0.92);
 
   // Synchronize input coordinates:
   let inputXM = Number.isFinite(rug.xM) ? rug.xM : (Number.isFinite(rug.x) ? rug.x * FT_TO_M : floorBoundsM.widthM / 2.0);

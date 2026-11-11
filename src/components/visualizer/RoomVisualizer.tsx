@@ -38,6 +38,8 @@ import roomScandinavianDining from "@/assets/visualizer/scandinavian-dining-room
 import roomWalnutDining from "@/assets/visualizer/walnut-dining-room.png";
 import roomSunlitBeigeBedroom from "@/assets/visualizer/sunlit-beige-bedroom.png";
 import roomWarmMinimalistOffice from "@/assets/visualizer/warm-minimalist-office.png";
+import roomModernOpenLivingBar from "@/assets/visualizer/modern-open-living-bar-room.jpg";
+import roomWarmWalnutArchway from "@/assets/visualizer/warm-walnut-living-archway-room.jpg";
 
 type Room = {
   name: string;
@@ -55,79 +57,101 @@ const ROOMS: Room[] = [
   {
     name: "Airy Contemporary Living Room",
     src: roomAiryLiving.src,
-    floor: { farLeft: { x: 0.3344, y: 0.577 }, farRight: { x: 0.6656, y: 0.577 }, nearRight: { x: 0.98, y: 0.9947 }, nearLeft: { x: 0.02, y: 0.9947 } },
-    floorSize: { widthFt: 16.4, depthFt: 14.2 },
+    floor: { farLeft: { x: 0.2896, y: 0.59 }, farRight: { x: 0.7104, y: 0.59 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
+    floorSize: { widthFt: 8.1, depthFt: 9.8 },
     occlusionMaskUrl: "/visualizer-masks/mask_0217bf885c574463a371f263f108fca5.png",
     floorSupportMaskUrl: "/visualizer-masks/floor_support_0217bf885c574463a371f263f108fca5.png",
     debugOverlayUrl: "/visualizer-masks/debug_0217bf885c574463a371f263f108fca5.jpg",
     roomType: "Living Room",
-    suggestedPlacement: { x: 8.2, z: 6.82, w: 8.0, h: 10.0, rot: 0.0 },
+    suggestedPlacement: { x: 4.05, z: 4.8, w: 8.0, h: 10.0, rot: 0.0 },
   },
   {
     name: "Sunlit Neutral Living Room",
     src: roomSunlitNeutralLiving.src,
-    floor: { farLeft: { x: 0.2924, y: 0.68 }, farRight: { x: 0.7076, y: 0.68 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
-    floorSize: { widthFt: 12.5, depthFt: 11.5 },
+    floor: { farLeft: { x: 0.2182, y: 0.77 }, farRight: { x: 0.7818, y: 0.77 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
+    floorSize: { widthFt: 8.6, depthFt: 7.2 },
     occlusionMaskUrl: "/visualizer-masks/mask_bef54382c6b645b7850f0950a66ee315.png",
     floorSupportMaskUrl: "/visualizer-masks/floor_support_bef54382c6b645b7850f0950a66ee315.png",
     debugOverlayUrl: "/visualizer-masks/debug_bef54382c6b645b7850f0950a66ee315.jpg",
     roomType: "Living Room",
-    suggestedPlacement: { x: 6.25, z: 5.52, w: 8.0, h: 10.0, rot: 0.0 },
+    suggestedPlacement: { x: 4.25, z: 3.8, w: 8.0, h: 10.0, rot: 0.0 },
   },
   {
     name: "Minimalist Warm Living Room",
     src: roomMinimalistWarmLiving.src,
-    floor: { farLeft: { x: 0.2924, y: 0.68 }, farRight: { x: 0.7076, y: 0.68 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
-    floorSize: { widthFt: 12.5, depthFt: 11.5 },
+    floor: { farLeft: { x: 0.2577, y: 0.74 }, farRight: { x: 0.7423, y: 0.74 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
+    floorSize: { widthFt: 8.9, depthFt: 8.6 },
     occlusionMaskUrl: "/visualizer-masks/mask_53c4c14906b1487ba1c6e3b27b71ca9a.png",
     floorSupportMaskUrl: "/visualizer-masks/floor_support_53c4c14906b1487ba1c6e3b27b71ca9a.png",
     debugOverlayUrl: "/visualizer-masks/debug_53c4c14906b1487ba1c6e3b27b71ca9a.jpg",
     roomType: "Living Room",
-    suggestedPlacement: { x: 6.25, z: 5.52, w: 8.0, h: 10.0, rot: 0.0 },
+    suggestedPlacement: { x: 4.65, z: 4.6, w: 8.0, h: 10.0, rot: 0.0 },
   },
   {
     name: "Scandinavian Dining Room",
     src: roomScandinavianDining.src,
-    floor: { farLeft: { x: 0.3397, y: 0.5558 }, farRight: { x: 0.6603, y: 0.5558 }, nearRight: { x: 0.98, y: 0.9947 }, nearLeft: { x: 0.02, y: 0.9947 } },
-    floorSize: { widthFt: 17.2, depthFt: 14.9 },
+    floor: { farLeft: { x: 0.3213, y: 0.565 }, farRight: { x: 0.6787, y: 0.565 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
+    floorSize: { widthFt: 9.6, depthFt: 14.6 },
     occlusionMaskUrl: "/visualizer-masks/mask_d883fdd52ac94c3888396d06c929bee0.png",
     floorSupportMaskUrl: "/visualizer-masks/floor_support_d883fdd52ac94c3888396d06c929bee0.png",
     debugOverlayUrl: "/visualizer-masks/debug_d883fdd52ac94c3888396d06c929bee0.jpg",
     roomType: "Dining Room",
-    suggestedPlacement: { x: 8.65, z: 9.4, w: 8.0, h: 10.0, rot: 0.0 },
+    suggestedPlacement: { x: 4.8, z: 9.4, w: 8.0, h: 10.0, rot: 0.0 },
   },
   {
     name: "Walnut Dining Room",
     src: roomWalnutDining.src,
-    floor: { farLeft: { x: 0.2924, y: 0.68 }, farRight: { x: 0.7076, y: 0.68 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
-    floorSize: { widthFt: 12.5, depthFt: 11.5 },
+    floor: { farLeft: { x: 0.2749, y: 0.695 }, farRight: { x: 0.7251, y: 0.695 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
+    floorSize: { widthFt: 10.9, depthFt: 11.6 },
     occlusionMaskUrl: "/visualizer-masks/mask_db33b98370824c7e9654b9f28ce93ee2.png",
     floorSupportMaskUrl: "/visualizer-masks/floor_support_db33b98370824c7e9654b9f28ce93ee2.png",
     debugOverlayUrl: "/visualizer-masks/debug_db33b98370824c7e9654b9f28ce93ee2.jpg",
     roomType: "Dining Room",
-    suggestedPlacement: { x: 5.24, z: 5.52, w: 8.0, h: 10.0, rot: 0.0 },
+    suggestedPlacement: { x: 5.15, z: 6.2, w: 8.0, h: 10.0, rot: 0.0 },
   },
   {
     name: "Sunlit Beige Bedroom",
     src: roomSunlitBeigeBedroom.src,
-    floor: { farLeft: { x: 0.3127, y: 0.6513 }, farRight: { x: 0.6873, y: 0.6513 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
-    floorSize: { widthFt: 12.5, depthFt: 11.7 },
+    floor: { farLeft: { x: 0.3283, y: 0.645 }, farRight: { x: 0.6717, y: 0.645 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
+    floorSize: { widthFt: 10.1, depthFt: 17.8 },
     occlusionMaskUrl: "/visualizer-masks/mask_165e3788af3547c38dd403026485d206.png",
     floorSupportMaskUrl: "/visualizer-masks/floor_support_165e3788af3547c38dd403026485d206.png",
     debugOverlayUrl: "/visualizer-masks/debug_165e3788af3547c38dd403026485d206.jpg",
     roomType: "Bedroom",
-    suggestedPlacement: { x: 6.55, z: 6.2, w: 8.0, h: 10.0, rot: 0.0 },
+    suggestedPlacement: { x: 5.18, z: 10.2, w: 8.0, h: 10.0, rot: 0.0 },
   },
   {
     name: "Warm Minimalist Office",
     src: roomWarmMinimalistOffice.src,
-    floor: { farLeft: { x: 0.3344, y: 0.577 }, farRight: { x: 0.6656, y: 0.577 }, nearRight: { x: 0.98, y: 0.9947 }, nearLeft: { x: 0.02, y: 0.9947 } },
-    floorSize: { widthFt: 16.4, depthFt: 14.2 },
+    floor: { farLeft: { x: 0.2594, y: 0.585 }, farRight: { x: 0.7406, y: 0.585 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
+    floorSize: { widthFt: 8.4, depthFt: 9.3 },
     occlusionMaskUrl: "/visualizer-masks/mask_8f7663f320d647398fb9995afed5ea2e.png",
     floorSupportMaskUrl: "/visualizer-masks/floor_support_8f7663f320d647398fb9995afed5ea2e.png",
     debugOverlayUrl: "/visualizer-masks/debug_8f7663f320d647398fb9995afed5ea2e.jpg",
     roomType: "Study Room",
-    suggestedPlacement: { x: 8.46, z: 8.7, w: 8.0, h: 10.0, rot: 0.0 },
+    suggestedPlacement: { x: 4.2, z: 4.7, w: 8.0, h: 10.0, rot: 0.0 },
+  },
+  {
+    name: "Modern Open Living & Bar",
+    src: roomModernOpenLivingBar.src,
+    floor: { farLeft: { x: 0.332, y: 0.623 }, farRight: { x: 0.6144, y: 0.623 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
+    floorSize: { widthFt: 9.2, depthFt: 12.9 },
+    occlusionMaskUrl: "/visualizer-masks/mask_513ae6f0df6f483eb49351e4228640a5.png",
+    floorSupportMaskUrl: "/visualizer-masks/floor_support_513ae6f0df6f483eb49351e4228640a5.png",
+    debugOverlayUrl: "/visualizer-masks/debug_513ae6f0df6f483eb49351e4228640a5.jpg",
+    roomType: "Living Room",
+    suggestedPlacement: { x: 5.3, z: 6.2, w: 8.0, h: 10.0, rot: 0.0 },
+  },
+  {
+    name: "Warm Walnut Living Room",
+    src: roomWarmWalnutArchway.src,
+    floor: { farLeft: { x: 0.3388, y: 0.642 }, farRight: { x: 0.6001, y: 0.642 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
+    floorSize: { widthFt: 6.8, depthFt: 8.0 },
+    occlusionMaskUrl: "/visualizer-masks/mask_58ba68374ffe4b48ad9c2eb7e70b6b92.png",
+    floorSupportMaskUrl: "/visualizer-masks/floor_support_58ba68374ffe4b48ad9c2eb7e70b6b92.png",
+    debugOverlayUrl: "/visualizer-masks/debug_58ba68374ffe4b48ad9c2eb7e70b6b92.jpg",
+    roomType: "Living Room",
+    suggestedPlacement: { x: 3.4, z: 3.9, w: 8.0, h: 10.0, rot: 0.0 },
   },
 ];
 
@@ -143,6 +167,8 @@ const SIZES = [
   { label: "8 x 10 ft", w: 8, h: 10 },
   { label: "9 x 12 ft", w: 9, h: 12 },
   { label: "10 x 14 ft", w: 10, h: 14 },
+  { label: "12 x 15 ft", w: 12, h: 15 },
+  { label: "12 x 18 ft", w: 12, h: 18 },
 ];
 
 const T = {
@@ -576,7 +602,7 @@ export default function RoomVisualizer({
         setIsScanning(false);
         setAnalysisStatus("success");
         setFloor(defaultFloorQuad());
-        setFloorSize({ widthFt: 14.5, depthFt: 13.5 });
+        setFloorSize({ widthFt: 9.2, depthFt: 10.5 });
         toast("Standard room perspective active. You can place and position rugs freely.", T);
       }
     }
@@ -894,7 +920,7 @@ export default function RoomVisualizer({
       name: "Your Room",
       src: url,
       floor: defaultFloorQuad(),
-      floorSize: { widthFt: 14.5, depthFt: 13.5 },
+      floorSize: { widthFt: 9.2, depthFt: 10.5 },
     };
     applyRoom(r, false, file);
     if (step === "room") setStep("canvas");
@@ -1102,29 +1128,29 @@ export default function RoomVisualizer({
       className={
         embedded
           ? "relative w-full h-full bg-[#0a0a0a] text-white flex flex-col overflow-hidden"
-          : "fixed inset-0 z-[9999] bg-[#0a0a0a] text-white flex flex-col"
+          : "fixed inset-0 z-[9999] bg-[#0a0a0a] text-white flex flex-col overflow-hidden"
       }
     >
-      <div className="min-h-[46px] md:h-11 bg-[#111] border-b border-white/10 flex items-center justify-between gap-2 px-2.5 sm:px-4 py-1.5 md:py-0 shrink-0">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+      <div className="min-h-[46px] md:h-11 bg-[#111] border-b border-white/10 flex items-center justify-between gap-1.5 sm:gap-2 px-2 sm:px-4 py-1.5 md:py-0 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
           <button
             onClick={() => {
               setStep("room");
               setRugs([]);
               setSelectedId(null);
             }}
-            className="min-h-[34px] px-1.5 text-white/60 hover:text-white text-[10px] uppercase tracking-widest flex items-center gap-1.5 transition shrink-0"
+            className="min-h-[34px] px-1 min-[375px]:px-1.5 text-white/60 hover:text-white text-[10px] uppercase tracking-wider min-[375px]:tracking-widest flex items-center gap-1 min-[375px]:gap-1.5 transition shrink-0"
           >
             <X size={13} /> {isVisdeckEmbed ? "Rooms" : "Exit"}
           </button>
           <div className="hidden sm:block w-px h-4 bg-white/10 shrink-0" />
           <span className="hidden sm:inline text-xs font-serif text-white/50 truncate">{visualizerLabel}</span>
         </div>
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1 min-[375px]:gap-1.5 sm:gap-2 shrink-0">
           <button
             type="button"
             onClick={() => setShowBefore((prev) => !prev)}
-            className={`min-h-[34px] px-2.5 sm:px-3 py-1.5 text-[9px] uppercase tracking-wider border rounded-md sm:rounded transition flex items-center gap-1.5 font-medium ${
+            className={`min-h-[34px] px-2 min-[375px]:px-2.5 sm:px-3 py-1.5 text-[9px] uppercase tracking-wider border rounded-md sm:rounded transition flex items-center gap-1 min-[375px]:gap-1.5 font-medium ${
               showBefore
                 ? "bg-[#7A0C13] border-[#7A0C13] text-white shadow-lg"
                 : "bg-white/5 border-white/10 text-white/75 hover:text-white hover:bg-white/10"
@@ -1309,7 +1335,7 @@ export default function RoomVisualizer({
           </div>
         </aside>
 
-        <main className="flex-1 relative bg-[#1a1a1a] min-h-[200px] min-w-0 overflow-hidden">
+        <main className="flex-1 relative bg-[#1a1a1a] min-h-[168px] md:min-h-[200px] min-w-0 overflow-hidden">
           <div ref={wrap} className="absolute inset-0">
             {room && (
               <FloorRugCanvas
@@ -1672,7 +1698,7 @@ export default function RoomVisualizer({
             <button
               type="button"
               onClick={() => setMobileTab("rugs")}
-              className={`flex-1 min-h-[38px] px-2 text-[10px] uppercase tracking-wider font-medium flex items-center justify-center gap-1.5 border-b-2 transition ${
+              className={`flex-1 min-h-[38px] px-1.5 min-[375px]:px-2 text-[9px] min-[375px]:text-[10px] uppercase tracking-normal min-[375px]:tracking-wider font-medium whitespace-nowrap flex items-center justify-center gap-1 min-[375px]:gap-1.5 border-b-2 transition ${
                 mobileTab === "rugs"
                   ? "border-[#a82028] text-white bg-white/[0.03]"
                   : "border-transparent text-white/45 hover:text-white/75"
@@ -1684,7 +1710,7 @@ export default function RoomVisualizer({
             <button
               type="button"
               onClick={() => setMobileTab("adjust")}
-              className={`flex-1 min-h-[38px] px-2 text-[10px] uppercase tracking-wider font-medium flex items-center justify-center gap-1.5 border-b-2 transition ${
+              className={`flex-1 min-h-[38px] px-1.5 min-[375px]:px-2 text-[9px] min-[375px]:text-[10px] uppercase tracking-normal min-[375px]:tracking-wider font-medium whitespace-nowrap flex items-center justify-center gap-1 min-[375px]:gap-1.5 border-b-2 transition ${
                 mobileTab === "adjust"
                   ? "border-[#a82028] text-white bg-white/[0.03]"
                   : "border-transparent text-white/45 hover:text-white/75"
@@ -1697,7 +1723,7 @@ export default function RoomVisualizer({
             <button
               type="button"
               onClick={() => setMobileTab("ai")}
-              className={`flex-1 min-h-[38px] px-2 text-[10px] uppercase tracking-wider font-medium flex items-center justify-center gap-1.5 border-b-2 transition ${
+              className={`flex-1 min-h-[38px] px-1.5 min-[375px]:px-2 text-[9px] min-[375px]:text-[10px] uppercase tracking-normal min-[375px]:tracking-wider font-medium whitespace-nowrap flex items-center justify-center gap-1 min-[375px]:gap-1.5 border-b-2 transition ${
                 mobileTab === "ai"
                   ? "border-[#a82028] text-white bg-white/[0.03]"
                   : "border-transparent text-white/45 hover:text-white/75"
@@ -1722,12 +1748,12 @@ export default function RoomVisualizer({
                 type="button"
                 onClick={() => setMobileDrawerExpanded((v) => !v)}
                 aria-label={mobileDrawerExpanded ? "Collapse rug list" : "Search and browse all rugs"}
-                className="min-h-[38px] px-3 border-l border-white/10 text-white/60 hover:text-white flex items-center gap-1 text-[10px] uppercase tracking-wider shrink-0"
+                className="min-h-[38px] px-2.5 min-[375px]:px-3 border-l border-white/10 text-white/60 hover:text-white flex items-center gap-1 text-[9px] min-[375px]:text-[10px] uppercase tracking-wider shrink-0"
               >
                 {mobileDrawerExpanded ? (
                   <>
                     <ChevronDown size={13} />
-                    <span>Compact</span>
+                    <span className="hidden min-[375px]:inline">Compact</span>
                   </>
                 ) : (
                   <>
@@ -1814,7 +1840,7 @@ export default function RoomVisualizer({
                   </div>
                   <div
                     className={`grid grid-cols-2 gap-2 p-2.5 overflow-y-auto overscroll-contain ${
-                      embedded ? "max-h-[185px]" : "max-h-[34dvh]"
+                      embedded ? "max-h-[160px]" : "max-h-[34dvh]"
                     }`}
                   >
                     {filtered.length === 0 ? (
@@ -1861,7 +1887,7 @@ export default function RoomVisualizer({
           )}
 
           {mobileTab === "adjust" && (
-            <div className={`p-3 space-y-3 overflow-y-auto overscroll-contain ${embedded ? "max-h-[210px]" : "max-h-[36dvh]"}`}>
+            <div className={`p-3 space-y-3 overflow-y-auto overscroll-contain ${embedded ? "max-h-[190px]" : "max-h-[36dvh]"}`}>
               {!selected ? (
                 <div className="py-4 text-center space-y-2.5">
                   <p className="text-xs text-white/50">Tap a rug on the floor or choose one from the catalog to resize &amp; rotate.</p>
@@ -1945,7 +1971,7 @@ export default function RoomVisualizer({
           )}
 
           {mobileTab === "ai" && (
-            <div className={`p-3 space-y-2.5 overflow-y-auto overscroll-contain ${embedded ? "max-h-[210px]" : "max-h-[36dvh]"}`}>
+            <div className={`p-3 space-y-2.5 overflow-y-auto overscroll-contain ${embedded ? "max-h-[190px]" : "max-h-[36dvh]"}`}>
               <div className="flex items-center justify-between">
                 <p className="text-[10px] uppercase tracking-widest text-white/60 flex items-center gap-1.5 font-medium">
                   <Sparkles size={12} className="text-[#a82028]" /> AI Room Intelligence
@@ -2268,6 +2294,8 @@ export default function RoomVisualizer({
                     { label: "8 × 10 ft", w: 8, h: 10 },
                     { label: "9 × 12 ft", w: 9, h: 12 },
                     { label: "10 × 14 ft", w: 10, h: 14 },
+                    { label: "12 × 15 ft", w: 12, h: 15 },
+                    { label: "12 × 18 ft", w: 12, h: 18 },
                   ].map((sz) => (
                     <button
                       key={sz.label}
@@ -2358,7 +2386,7 @@ function Btn({
   return (
     <button
       onClick={onClick}
-      className={`min-h-[34px] flex items-center gap-1.5 text-[9px] sm:text-[10px] uppercase tracking-wider sm:tracking-widest px-2.5 py-1.5 border rounded-md sm:rounded transition ${
+      className={`min-h-[34px] flex items-center gap-1 min-[375px]:gap-1.5 text-[9px] sm:text-[10px] uppercase tracking-wider sm:tracking-widest px-2 min-[375px]:px-2.5 py-1.5 border rounded-md sm:rounded transition ${
         active ? "text-white border-white/30 bg-white/10" : "text-white/70 md:text-white/45 hover:text-white border-white/10 hover:border-white/25 bg-white/[0.04]"
       }`}
     >

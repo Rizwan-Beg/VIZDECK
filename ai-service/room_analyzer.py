@@ -325,11 +325,11 @@ def analyze_room_image(
                     "confidence": confidence
                 }
 
-    # 3. Robust Floor Quad & Horizon Ray Estimation (Calibrated to True Room Depth)
+    # 3. Robust Floor Quad & Horizon Ray Estimation (Calibrated to Pinhole Geometry & Furniture Scale)
     if ground_pixel_count < (total_pixels * 0.05):
         horizon_y = 0.65
         near_y = 0.995
-        x_vp, y_vp = 0.50, 0.44
+        x_vp, y_vp = 0.50, 0.39
         near_left_x, near_right_x = 0.02, 0.98
         ray_L = (near_left_x - x_vp) / (near_y - y_vp)
         ray_R = (near_right_x - x_vp) / (near_y - y_vp)
@@ -337,23 +337,70 @@ def analyze_room_image(
         far_right_x = float(x_vp + ray_R * (horizon_y - y_vp))
     else:
         y_indices, x_indices = np.where(traversable_ground_mask > 0)
-        # Using 1.2th percentile prevents perspective compression from discarding distant floor
-        horizon_y = float(np.percentile(y_indices, 1.2) / orig_h)
-        horizon_y = max(0.38, min(0.68, horizon_y))
+        # Using 1.8th percentile avoids stray bright glare pixels above the true baseboard
+        horizon_y = float(np.percentile(y_indices, 1.8) / orig_h)
+        horizon_y = max(0.38, min(0.78, horizon_y))
         near_y = float(np.percentile(y_indices, 98.8) / orig_h)
-        near_y = min(0.995, max(near_y, horizon_y + 0.18))
+        near_y = min(0.995, max(near_y, horizon_y + 0.16))
 
-        # Roomvo-grade perspective ray convergence to central vanishing point
+        prior_y_vp = max(0.16, min(0.48, horizon_y - 0.28))
         x_vp = 0.50
-        y_vp = max(0.12, min(0.44, horizon_y - 0.22))
+        y_vp = prior_y_vp
+
+        # Estimate vanishing horizon from floor tile/plank/baseboard rays when clearly present
+        try:
+            roi_top = max(0, int((horizon_y - 0.05) * orig_h))
+            gray_roi = cv2.cvtColor(img_cv[roi_top:, :], cv2.COLOR_BGR2GRAY)
+            clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8))
+            edges = cv2.Canny(clahe.apply(gray_roi), 30, 95, apertureSize=3)
+            h_lines = cv2.HoughLinesP(
+                edges,
+                1,
+                np.pi / 180,
+                threshold=45,
+                minLineLength=max(24, int(0.07 * orig_w)),
+                maxLineGap=18,
+            )
+            if h_lines is not None:
+                left_rays, right_rays = [], []
+                for hl in h_lines:
+                    lx1, ly1, lx2, ly2 = hl[0]
+                    ly1 += roi_top
+                    ly2 += roi_top
+                    if ly2 < ly1:
+                        lx1, ly1, lx2, ly2 = lx2, ly2, lx1, ly1
+                    ang = abs(np.degrees(np.arctan2(ly2 - ly1, lx2 - lx1)))
+                    if 14.0 <= ang <= 74.0 or 106.0 <= ang <= 166.0:
+                        seg = (lx1 / orig_w, ly1 / orig_h, lx2 / orig_w, ly2 / orig_h)
+                        if seg[2] < seg[0] and seg[2] < 0.48:
+                            left_rays.append(seg)
+                        elif seg[2] > seg[0] and seg[2] > 0.52:
+                            right_rays.append(seg)
+                vp_ys = []
+                for l1 in left_rays[:20]:
+                    for l2 in right_rays[:20]:
+                        ax1, ay1, ax2, ay2 = l1
+                        bx1, by1, bx2, by2 = l2
+                        den = (ax1 - ax2) * (by1 - by2) - (ay1 - ay2) * (bx1 - bx2)
+                        if abs(den) > 1e-4:
+                            px = ((ax1 * ay2 - ay1 * ax2) * (bx1 - bx2) - (ax1 - ax2) * (bx1 * by2 - by1 * bx2)) / den
+                            py = ((ax1 * ay2 - ay1 * ax2) * (by1 - by2) - (ay1 - ay2) * (bx1 * by2 - by1 * bx2)) / den
+                            if 0.36 <= px <= 0.64 and 0.12 <= py <= (horizon_y - 0.08):
+                                vp_ys.append(py)
+                if len(vp_ys) >= 4 and float(np.std(vp_ys)) < 0.10:
+                    y_vp = 0.65 * float(np.median(vp_ys)) + 0.35 * prior_y_vp
+                    y_vp = max(0.15, min(0.49, horizon_y - 0.12, y_vp))
+        except Exception:
+            y_vp = prior_y_vp
+
         near_left_x = 0.02
         near_right_x = 0.98
 
         ray_L = (near_left_x - x_vp) / (near_y - y_vp)
         ray_R = (near_right_x - x_vp) / (near_y - y_vp)
 
-        far_left_x = max(0.08, min(0.44, float(x_vp + ray_L * (horizon_y - y_vp))))
-        far_right_x = min(0.92, max(0.56, float(x_vp + ray_R * (horizon_y - y_vp))))
+        far_left_x = max(0.08, min(0.43, float(x_vp + ray_L * (horizon_y - y_vp))))
+        far_right_x = min(0.92, max(0.57, float(x_vp + ray_R * (horizon_y - y_vp))))
 
     floor_quad = {
         "farLeft": {"x": round(far_left_x, 4), "y": round(horizon_y, 4)},
@@ -374,11 +421,54 @@ def analyze_room_image(
             for pt in approx
         ]
 
-    # Realistic Physical Room Floor Dimensions (metric feet)
-    # Calibrated to typical standing camera FOV (68 deg HFOV, 5 ft lens height)
-    visible_height_ratio = near_y - horizon_y
-    est_depth_ft = max(11.5, min(16.5, round(visible_height_ratio * 34.0, 1)))
-    est_width_ft = max(12.5, min(17.5, round(est_depth_ft * (orig_w / orig_h) * 0.65, 1)))
+    # Pinhole metric estimation anchored by detected primary furniture dimensions
+    aspect = float(orig_w) / float(max(1, orig_h))
+    h_cam_ft = 3.7
+    f_x = 0.90 if aspect >= 1.1 else (0.85 / max(0.5, aspect))
+    near_span_norm = near_right_x - near_left_x
+    dy_near = max(0.18, near_y - y_vp)
+    dy_far = max(0.09, horizon_y - y_vp)
+
+    pinhole_width_ft = near_span_norm * h_cam_ft * aspect / dy_near
+    pinhole_depth_ft = h_cam_ft * (aspect * f_x) * ((1.0 / dy_far) - (1.0 / dy_near))
+
+    all_labels_joined = " ".join(i["label"] for i in detected_instances)
+    anchor_estimates = []
+    for inst in detected_instances:
+        lbl = inst["label"]
+        bx1, by1, bx2, by2 = inst["box"]
+        bw_norm = (bx2 - bx1) / float(max(1, orig_w))
+        bh_norm = (by2 - by1) / float(max(1, orig_h))
+        touches_edge = (bx1 <= int(0.02 * orig_w)) or (bx2 >= int(0.98 * orig_w))
+        if touches_edge or bw_norm < 0.16:
+            continue
+
+        expected_ft = None
+        if ("sofa" in lbl or "couch" in lbl) and bw_norm >= 0.28 and (bw_norm * aspect) > (bh_norm * 1.15):
+            expected_ft = 9.4 if bw_norm >= 0.56 else 8.2
+        elif "bed" in lbl and bw_norm >= 0.18:
+            expected_ft = 6.2
+        elif "desk" in lbl and bw_norm >= 0.22:
+            expected_ft = 5.6
+        elif ("dining" in lbl or "table" in lbl) and ("dining" in all_labels_joined or bw_norm >= 0.32):
+            expected_ft = 7.4 if bw_norm >= 0.34 else 6.0
+
+        if expected_ft is not None:
+            v_furn = max(horizon_y + 0.01, min(near_y, inst["y_max"] / float(max(1, orig_h))))
+            span_at_furn = near_span_norm * (v_furn - y_vp) / dy_near
+            raw_w_ft = expected_ft * (span_at_furn / bw_norm)
+            clamped_w_ft = max(pinhole_width_ft * 0.65, min(pinhole_width_ft * 1.45, raw_w_ft))
+            anchor_estimates.append(clamped_w_ft)
+
+    if anchor_estimates:
+        anchor_width_ft = float(np.median(anchor_estimates))
+        raw_width_ft = 0.55 * anchor_width_ft + 0.45 * pinhole_width_ft
+    else:
+        raw_width_ft = pinhole_width_ft
+
+    scale_factor = raw_width_ft / max(0.1, pinhole_width_ft)
+    est_width_ft = round(max(5.5, min(14.5, raw_width_ft)), 1)
+    est_depth_ft = round(max(6.0, min(19.5, pinhole_depth_ft * scale_factor)), 1)
     floor_size = {"widthFt": est_width_ft, "depthFt": est_depth_ft}
 
     # Metric floor homography
@@ -647,13 +737,20 @@ def analyze_room_image(
 
     # Standard default bounding frame
     rug_w, rug_h = 8.0, 10.0
-    min_x_pad = min(1.0, est_width_ft * 0.08)
-    min_z_pad = min(1.0, est_depth_ft * 0.08)
-    rug_x = max(min_x_pad + rug_w / 2.0, min(est_width_ft - rug_w / 2.0 - min_x_pad, rug_x))
-    if est_depth_ft <= rug_h + 1.5:
-        rug_z = est_depth_ft * 0.48
+    min_x_pad = min(0.8, est_width_ft * 0.08)
+    min_z_pad = min(0.8, est_depth_ft * 0.08)
+    fit_min_x = min_x_pad + rug_w / 2.0
+    fit_max_x = est_width_ft - rug_w / 2.0 - min_x_pad
+    if fit_min_x <= fit_max_x:
+        rug_x = max(fit_min_x, min(fit_max_x, rug_x))
     else:
-        rug_z = max(rug_h / 2.0 + 0.8, min(est_depth_ft - rug_h / 2.0 - 0.5, rug_z))
+        flex_x = max(0.5, est_width_ft * 0.20)
+        rug_x = max(est_width_ft * 0.50 - flex_x, min(est_width_ft * 0.50 + flex_x, rug_x))
+
+    if est_depth_ft <= rug_h + 1.5:
+        rug_z = max(est_depth_ft * 0.35, min(est_depth_ft * 0.72, rug_z))
+    else:
+        rug_z = max(rug_h / 2.0 + min_z_pad, min(est_depth_ft - rug_h / 2.0 - 0.5, rug_z))
 
     suggested_placement = {
         "x": round(float(rug_x), 2),
