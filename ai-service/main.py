@@ -1,5 +1,4 @@
 import os
-import importlib
 from fastapi import FastAPI, File, Form, UploadFile, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -62,9 +61,6 @@ async def analyze_room_endpoint(
     furniture occlusion mask generation, and anchor placement.
     """
     try:
-        import room_analyzer
-
-        importlib.reload(room_analyzer)
         from room_analyzer import analyze_room_image
 
         content = await room_image.read()

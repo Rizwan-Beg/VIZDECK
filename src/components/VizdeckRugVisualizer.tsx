@@ -24,7 +24,7 @@ export function VizdeckRugVisualizer({ className = "" }: { className?: string })
 
   return (
     <section
-      className={`v-visualizer-shell ${className}`.trim()}
+      className={`v-visualizer-shell ${editorOpen ? "is-editor-open" : ""} ${className}`.trim()}
       aria-label="VIZDECK interactive rug visualizer"
     >
       <div className="v-visualizer-shell__bar">
@@ -121,7 +121,7 @@ export function VizdeckRugVisualizer({ className = "" }: { className?: string })
         </p>
         <span>Native WebGL engine</span>
       </div>
-      <Toaster position="bottom-right" />
+      <Toaster position="bottom-right" containerStyle={{ zIndex: 10050 }} />
     </section>
   );
 }

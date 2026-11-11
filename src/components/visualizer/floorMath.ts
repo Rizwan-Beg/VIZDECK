@@ -102,6 +102,43 @@ export function coverLayout(
   };
 }
 
+export function containLayout(
+  canvasW: number,
+  canvasH: number,
+  imgW: number,
+  imgH: number
+): ImageLayout {
+  const s = Math.min(canvasW / imgW, canvasH / imgH);
+  const w = imgW * s;
+  const h = imgH * s;
+  return {
+    x: (canvasW - w) / 2,
+    y: (canvasH - h) / 2,
+    w,
+    h,
+    canvasW,
+    canvasH,
+  };
+}
+
+export function fitRoomLayout(
+  canvasW: number,
+  canvasH: number,
+  imgW: number,
+  imgH: number
+): ImageLayout {
+  const canvasAspect = canvasW / Math.max(1, canvasH);
+  const imgAspect = imgW / Math.max(1, imgH);
+  const aspectMismatch = Math.max(canvasAspect / imgAspect, imgAspect / canvasAspect);
+
+  // On narrow/mobile screens or when photo orientation differs sharply from the canvas,
+  // contain the full photo so walls, furniture, and floor edges aren't cropped off.
+  if (canvasW < 768 || aspectMismatch > 1.38) {
+    return containLayout(canvasW, canvasH, imgW, imgH);
+  }
+  return coverLayout(canvasW, canvasH, imgW, imgH);
+}
+
 export function imageToCanvas(p: Vec2, layout: ImageLayout): Vec2 {
   return { x: layout.x + p.x * layout.w, y: layout.y + p.y * layout.h };
 }

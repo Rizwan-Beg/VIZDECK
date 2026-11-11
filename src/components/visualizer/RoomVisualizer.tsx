@@ -8,7 +8,7 @@ import {
   RotateCw, Trash2, Download, Home, Search, UploadCloud, X,
   ArrowRight, Copy, Grid3x3, MousePointer2, EyeOff, Eraser,
   Sparkles, Eye, Loader2, Ruler, Activity, CheckCircle2, AlertTriangle, ShieldCheck,
-  Layers, Check
+  Layers, Check, ChevronUp, ChevronDown
 } from "lucide-react";
 import { type RugMaterialType } from "./rugMaterials";
 import FloorRugCanvas, { type PointerTool } from "./FloorRugCanvas";
@@ -23,6 +23,7 @@ import {
   defaultFloorQuad,
   type FloorQuad,
   type FloorSize,
+  type ImageLayout,
   type MetricCalibration,
   type MetricDimensions,
   type PlacedRug,
@@ -275,6 +276,9 @@ export default function RoomVisualizer({
   const placedFromUrl = useRef(false);
 
   const [wrapSize, setWrapSize] = useState({ w: 800, h: 600 });
+  const [canvasLayout, setCanvasLayout] = useState<ImageLayout | null>(null);
+  const [mobileTab, setMobileTab] = useState<"rugs" | "adjust" | "ai">("rugs");
+  const [mobileDrawerExpanded, setMobileDrawerExpanded] = useState(false);
 
   useEffect(() => {
     if (!wrap.current) return;
@@ -900,8 +904,32 @@ export default function RoomVisualizer({
   const download = () => {
     const cv = canvasNode.current;
     if (!cv) return;
+    let dataUrl = "";
+    if (canvasLayout && cv.width > 0 && cv.height > 0) {
+      const scaleX = cv.width / Math.max(1, canvasLayout.canvasW);
+      const scaleY = cv.height / Math.max(1, canvasLayout.canvasH);
+      const sx = Math.max(0, Math.round(canvasLayout.x * scaleX));
+      const sy = Math.max(0, Math.round(canvasLayout.y * scaleY));
+      const ex = Math.min(cv.width, Math.round((canvasLayout.x + canvasLayout.w) * scaleX));
+      const ey = Math.min(cv.height, Math.round((canvasLayout.y + canvasLayout.h) * scaleY));
+      const sw = ex - sx;
+      const sh = ey - sy;
+      if (sw > 10 && sh > 10) {
+        const out = document.createElement("canvas");
+        out.width = sw;
+        out.height = sh;
+        const ctx = out.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(cv, sx, sy, sw, sh, 0, 0, sw, sh);
+          dataUrl = out.toDataURL("image/png");
+        }
+      }
+    }
+    if (!dataUrl) {
+      dataUrl = cv.toDataURL("image/png");
+    }
     const a = document.createElement("a");
-    a.href = cv.toDataURL("image/png");
+    a.href = dataUrl;
     a.download = `vizdeck-room-${Date.now()}.png`;
     a.click();
     toast.success("Image saved!", T);
@@ -921,6 +949,68 @@ export default function RoomVisualizer({
   };
 
   const filtered = products.filter((p: VisualizerProduct) => (p.name || "").toLowerCase().includes(query.toLowerCase()));
+  const selectedRotDeg = selected
+    ? Math.round((((selected.rot * 180) / Math.PI) % 360 + 360) % 360)
+    : 0;
+
+  const renderAnalysisStatusBadge = () => {
+    if (analysisStatus === "analyzing") {
+      return (
+        <span className="flex items-center gap-1 text-[9px] md:text-[8px] text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">
+          <Loader2 size={9} className="animate-spin" /> Analyzing
+        </span>
+      );
+    }
+    if (analysisStatus === "success") {
+      return (
+        <span className="flex items-center gap-1 text-[9px] md:text-[8px] text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Active
+        </span>
+      );
+    }
+    if (analysisStatus === "error") {
+      return (
+        <span className="flex items-center gap-1 text-[9px] md:text-[8px] text-red-400 bg-red-400/10 px-1.5 py-0.5 rounded">
+          Failed
+        </span>
+      );
+    }
+    return <span className="text-[9px] md:text-[8px] text-white/40">Ready</span>;
+  };
+
+  const renderScanningNotice = (compact = false) =>
+    isScanning ? (
+      <div
+        className={`${
+          compact ? "mx-3 mt-2 py-1.5 px-3" : "mx-1 my-1.5 py-2 px-3"
+        } rounded-lg bg-[#10b981]/15 border border-[#10b981]/35 text-[#34d399] text-[10px] flex items-center justify-center gap-2 tracking-wide font-medium shadow-md`}
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-ping" />
+        <span>{getScanStepLabel(scanPercent)}...</span>
+      </div>
+    ) : null;
+
+  const renderExistingRugToggle = (mobile = false) =>
+    hasExistingRug && cleanFloorUrl ? (
+      <div className={mobile ? "pt-2 border-t border-white/10" : "p-3 border-b border-white/10 shrink-0"}>
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-[9px] uppercase tracking-wider text-emerald-400 font-medium flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Existing Rug Aligned
+          </span>
+          <span className="text-[8px] text-white/40">Direct Overlay</span>
+        </div>
+        <label className="flex items-center gap-2 text-[11px] md:text-[10px] text-white/75 cursor-pointer select-none mt-1 py-1">
+          <input
+            type="checkbox"
+            checked={replaceExistingRug}
+            onChange={(e) => setReplaceExistingRug(e.target.checked)}
+            className="w-4 h-4 md:w-3.5 md:h-3.5 rounded bg-white/10 border-white/20 text-[#a82028] focus:ring-0"
+          />
+          <span>Remove old rug underneath (Inpaint)</span>
+        </label>
+      </div>
+    ) : null;
 
   if (step === "room") {
     return (
@@ -928,34 +1018,34 @@ export default function RoomVisualizer({
         style={{ fontFamily: "'Libre Franklin', sans-serif" }}
         className={
           embedded
-            ? "relative w-full h-full bg-[#0a0a0a] text-white overflow-y-auto"
-            : "fixed inset-0 z-[9999] bg-[#0a0a0a] text-white overflow-y-auto"
+            ? "relative w-full h-full bg-[#0a0a0a] text-white overflow-y-auto overscroll-contain"
+            : "fixed inset-0 z-[9999] bg-[#0a0a0a] text-white overflow-y-auto overscroll-contain"
         }
       >
         <div className="sticky top-0 z-10 bg-[#0a0a0a]/90 backdrop-blur-xl border-b border-white/5">
-          <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3">
             {onExit ? (
-              <button onClick={onExit} className="text-white/40 hover:text-white text-xs uppercase tracking-widest flex items-center gap-2 transition">
+              <button onClick={onExit} className="min-h-[36px] text-white/60 hover:text-white text-xs uppercase tracking-widest flex items-center gap-2 transition shrink-0">
                 <X size={14} /> Exit
               </button>
             ) : !isVisdeckEmbed ? (
-              <button onClick={() => router.back()} className="text-white/40 hover:text-white text-xs uppercase tracking-widest flex items-center gap-2 transition">
+              <button onClick={() => router.back()} className="min-h-[36px] text-white/60 hover:text-white text-xs uppercase tracking-widest flex items-center gap-2 transition shrink-0">
                 <X size={14} /> Exit
               </button>
             ) : (
-              <span className="text-xs uppercase tracking-widest text-white/35">VIZDECK</span>
+              <span className="text-xs uppercase tracking-widest text-white/35 shrink-0">VIZDECK</span>
             )}
-            <span className="text-sm font-serif text-white/50">{visualizerLabel}</span>
+            <span className="text-xs sm:text-sm font-serif text-white/60 truncate">{visualizerLabel}</span>
             {/* <button onClick={() => router.push("/visualizer")} className="text-white/30 hover:text-white text-xs uppercase tracking-widest transition">
               AI Mode →
             </button> */}
           </div>
         </div>
 
-        <div className="max-w-5xl mx-auto px-6 py-16">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-14">
-            <h1 className="text-4xl md:text-5xl font-serif text-white mb-4">Choose Your Room</h1>
-            <p className="text-white/40 text-sm max-w-lg mx-auto">
+        <div className={`max-w-5xl mx-auto px-4 sm:px-6 ${embedded ? "py-5 sm:py-10" : "py-7 sm:py-14"}`}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className={`text-center ${embedded ? "mb-6 sm:mb-10" : "mb-7 sm:mb-12"}`}>
+            <h1 className="text-2xl sm:text-4xl md:text-5xl font-serif text-white mb-2.5 sm:mb-4">Choose Your Room</h1>
+            <p className="text-white/50 text-xs sm:text-sm max-w-lg mx-auto leading-relaxed">
               Rugs sit on the floor in perspective, pick up the room lighting, and tuck under furniture. Drag, rotate, or copy after you place one.
             </p>
           </motion.div>
@@ -964,17 +1054,17 @@ export default function RoomVisualizer({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="block cursor-pointer border-2 border-dashed border-white/15 hover:border-[#7A0C13] p-10 text-center transition-all group mb-10 rounded-lg hover:bg-white/[0.02]"
+            className="block cursor-pointer border-2 border-dashed border-white/15 hover:border-[#7A0C13] active:border-[#7A0C13] p-5 sm:p-10 text-center transition-all group mb-6 sm:mb-10 rounded-xl hover:bg-white/[0.02]"
           >
-            <UploadCloud size={36} className="mx-auto text-white/20 group-hover:text-[#7A0C13] mb-3 transition" />
-            <p className="text-sm text-white/50 uppercase tracking-widest group-hover:text-white/80 transition">Upload Your Own Room Photo</p>
-            <p className="text-[10px] text-white/20 mt-2 tracking-wider">JPG, PNG — any resolution</p>
+            <UploadCloud className="w-7 h-7 sm:w-9 sm:h-9 mx-auto text-white/25 group-hover:text-[#7A0C13] mb-2.5 sm:mb-3 transition" />
+            <p className="text-xs sm:text-sm text-white/70 uppercase tracking-widest group-hover:text-white/90 transition">Upload Your Own Room Photo</p>
+            <p className="text-[10px] text-white/35 mt-1.5 sm:mt-2 tracking-wider">JPG, PNG — camera or photo library</p>
             <input type="file" accept="image/*" className="hidden" onChange={uploadRoom} />
           </motion.label>
 
-          <p className="text-[10px] uppercase tracking-[0.2em] text-white/20 mb-6 text-center">— or choose a sample room —</p>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-white/30 mb-4 sm:mb-6 text-center">— or choose a sample room —</p>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 min-[360px]:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 pb-6">
             {ROOMS.map((r, i) => (
               <motion.button
                 key={r.name}
@@ -985,14 +1075,17 @@ export default function RoomVisualizer({
                   applyRoom(r, false);
                   setStep("canvas");
                 }}
-                className="relative overflow-hidden aspect-[4/3] group rounded-lg ring-1 ring-white/10 hover:ring-[#7A0C13] hover:ring-2 transition-all"
+                className="relative overflow-hidden aspect-[4/3] group rounded-xl ring-1 ring-white/10 hover:ring-[#7A0C13] active:ring-[#7A0C13] hover:ring-2 transition-all text-left"
               >
                 <img src={r.src} alt={r.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-4">
-                  <p className="text-sm text-white font-serif drop-shadow-lg">{r.name}</p>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-2.5 sm:p-4">
+                  {r.roomType && (
+                    <span className="block text-[8px] sm:text-[9px] uppercase tracking-widest text-white/60 mb-0.5">{r.roomType}</span>
+                  )}
+                  <p className="text-xs sm:text-sm text-white font-serif drop-shadow-lg leading-tight">{r.name}</p>
                 </div>
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-[#7A0C13]/20">
+                <div className="hidden sm:flex absolute inset-0 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-[#7A0C13]/20">
                   <div className="bg-white text-black text-[10px] uppercase tracking-widest px-4 py-2 font-medium">Select Room</div>
                 </div>
               </motion.button>
@@ -1012,92 +1105,49 @@ export default function RoomVisualizer({
           : "fixed inset-0 z-[9999] bg-[#0a0a0a] text-white flex flex-col"
       }
     >
-      <div className="h-11 bg-[#111] border-b border-white/10 flex items-center justify-between px-4 shrink-0">
-        <div className="flex items-center gap-3">
+      <div className="min-h-[46px] md:h-11 bg-[#111] border-b border-white/10 flex items-center justify-between gap-2 px-2.5 sm:px-4 py-1.5 md:py-0 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             onClick={() => {
               setStep("room");
               setRugs([]);
               setSelectedId(null);
             }}
-            className="text-white/50 hover:text-white text-[10px] uppercase tracking-widest flex items-center gap-1.5 transition"
+            className="min-h-[34px] px-1.5 text-white/60 hover:text-white text-[10px] uppercase tracking-widest flex items-center gap-1.5 transition shrink-0"
           >
             <X size={13} /> {isVisdeckEmbed ? "Rooms" : "Exit"}
           </button>
-          <div className="w-px h-4 bg-white/10" />
-          <span className="text-xs font-serif text-white/50">{visualizerLabel}</span>
+          <div className="hidden sm:block w-px h-4 bg-white/10 shrink-0" />
+          <span className="hidden sm:inline text-xs font-serif text-white/50 truncate">{visualizerLabel}</span>
         </div>
-        <div className="flex items-center gap-2">
-          {/* this a feature of a 3D Realistic Rendering & Material Selector */}
-          {/* <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-lg p-0.5 px-1.5">
-            <button
-              onClick={() => setEnable3DRendering((v) => !v)}
-              className={`text-[9px] uppercase tracking-wider px-2 py-1 rounded transition flex items-center gap-1 font-medium ${
-                enable3DRendering
-                  ? "bg-[#a82028] text-white shadow-sm"
-                  : "text-white/40 hover:text-white"
-              }`}
-              title="Toggle 3D Physical Pile & PBR Lighting"
-            >
-              <Layers size={11} /> {enable3DRendering ? "3D Physical Pile" : "2D Flat"}
-            </button>
-            {enable3DRendering && (
-              <select
-                value={materialType}
-                onChange={(e) => setMaterialType(e.target.value as RugMaterialType)}
-                className="bg-black/60 text-[9px] text-white/80 border border-white/10 rounded px-1.5 py-0.5 outline-none cursor-pointer hover:border-white/20"
-              >
-                <option value="wool_silk">Wool & Silk (Authentic)</option>
-                <option value="wool">Pure Wool</option>
-                <option value="silk">Pure Silk</option>
-                <option value="cotton">Cotton Flatweave</option>
-              </select>
-            )}
-          </div> */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <button
             type="button"
             onClick={() => setShowBefore((prev) => !prev)}
-            className={`px-3 py-1.5 text-[9px] uppercase tracking-wider border rounded transition flex items-center gap-1.5 font-medium ${
+            className={`min-h-[34px] px-2.5 sm:px-3 py-1.5 text-[9px] uppercase tracking-wider border rounded-md sm:rounded transition flex items-center gap-1.5 font-medium ${
               showBefore
                 ? "bg-[#7A0C13] border-[#7A0C13] text-white shadow-lg"
-                : "bg-white/5 border-white/10 text-white/70 hover:text-white hover:bg-white/10"
+                : "bg-white/5 border-white/10 text-white/75 hover:text-white hover:bg-white/10"
             }`}
             title="Toggle Before (Original Room) and After (With Rug)"
           >
-            <Eye size={11} />
-            {showBefore ? "Original (Before)" : "Before / After"}
+            <Eye size={12} />
+            <span className="sm:hidden">{showBefore ? "Original" : "Compare"}</span>
+            <span className="hidden sm:inline">{showBefore ? "Original (Before)" : "Before / After"}</span>
           </button>
-          <Btn icon={<Home size={11} />} label="Change Room" onClick={() => setRoomModal(true)} />
-          <Btn icon={<Download size={11} />} label="Save" onClick={download} />
-          {/* <div className="w-px h-4 bg-white/8 mx-0.5" /> */}
-          {/* <button onClick={() => router.push("/visualizer")} className="text-white/30 hover:text-white text-[10px] uppercase tracking-widest px-2 py-1 transition">
-            AI Mode →
-          </button> */}
+          <Btn icon={<Home size={12} />} label="Change Room" mobileLabel="Room" onClick={() => setRoomModal(true)} />
+          <Btn icon={<Download size={12} />} label="Save" onClick={download} />
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
-        <aside className="w-[280px] bg-[#111] border-r border-white/10 flex flex-col shrink-0 overflow-hidden">
+      <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden">
+        <aside className="hidden md:flex w-[280px] bg-[#111] border-r border-white/10 flex-col shrink-0 overflow-hidden">
           <div className="p-3.5 border-b border-white/10 shrink-0 bg-white/[0.02]">
             <div className="flex items-center justify-between mb-2">
               <p className="text-[9px] uppercase tracking-widest text-white/50 flex items-center gap-1.5 font-medium">
                 <Sparkles size={11} className="text-[#a82028]" /> AI Room Intelligence
               </p>
-              {analysisStatus === "analyzing" ? (
-                <span className="flex items-center gap-1 text-[8px] text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">
-                  <Loader2 size={9} className="animate-spin" /> Analyzing
-                </span>
-              ) : analysisStatus === "success" ? (
-                <span className="flex items-center gap-1 text-[8px] text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Active
-                </span>
-              ) : analysisStatus === "error" ? (
-                <span className="flex items-center gap-1 text-[8px] text-red-400 bg-red-400/10 px-1.5 py-0.5 rounded">
-                  Failed
-                </span>
-              ) : (
-                <span className="text-[8px] text-white/40">Ready</span>
-              )}
+              {renderAnalysisStatusBadge()}
             </div>
 
             <div className="space-y-1.5 mb-3">
@@ -1109,13 +1159,6 @@ export default function RoomVisualizer({
                 <span className="text-white/40">Estimated Floor</span>
                 <span className="text-white/70 font-mono text-[9px]">{floorSize.widthFt} × {floorSize.depthFt} ft</span>
               </div>
-              {/* <button
-                type="button"
-                onClick={() => setShowCalibrationModal(true)} //this is for the calibrated measure
-                className="w-full flex items-center justify-center gap-1.5 py-1 px-2 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[9px] uppercase tracking-wider transition"
-              >
-                <Ruler size={11} /> {calibration?.isCalibrated ? "Calibrated (Re-calibrate)" : "Calibrate Physical Scale"}
-              </button> */}
               {analysisStatus === "error" && analysisError ? (
                 <div className="text-[9px] text-red-400/80 leading-relaxed bg-red-400/10 p-2 rounded border border-red-400/20">
                   {analysisError}
@@ -1152,26 +1195,7 @@ export default function RoomVisualizer({
             </div>
           </div>
 
-          {hasExistingRug && cleanFloorUrl && (
-            <div className="p-3 border-b border-white/10 shrink-0">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[9px] uppercase tracking-wider text-emerald-400 font-medium flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Existing Rug Aligned
-                </span>
-                <span className="text-[8px] text-white/40">Direct Overlay</span>
-              </div>
-              <label className="flex items-center gap-2 text-[10px] text-white/70 cursor-pointer select-none mt-1">
-                <input
-                  type="checkbox"
-                  checked={replaceExistingRug}
-                  onChange={(e) => setReplaceExistingRug(e.target.checked)}
-                  className="rounded bg-white/10 border-white/20 text-[#a82028] focus:ring-0"
-                />
-                <span>Remove old rug underneath (Inpaint)</span>
-              </label>
-            </div>
-          )}
+          {renderExistingRugToggle(false)}
 
           {selected && (
             <div className="p-3 border-b border-white/10 bg-white/[0.015] shrink-0">
@@ -1193,14 +1217,14 @@ export default function RoomVisualizer({
           {selected && (
             <div className="p-3 border-b border-white/10 shrink-0">
               <p className="text-[8px] uppercase tracking-widest text-white/25 mb-2">
-                Rotate {Math.round((((selected.rot * 180) / Math.PI) % 360 + 360) % 360)}°
+                Rotate {selectedRotDeg}°
               </p>
               <input
                 type="range"
                 min={0}
                 max={360}
                 step={1}
-                value={Math.round((((selected.rot * 180) / Math.PI) % 360 + 360) % 360)}
+                value={selectedRotDeg}
                 onChange={(e) => setRotationDeg(+e.target.value)}
                 className="w-full accent-[#7A0C13]"
               />
@@ -1246,12 +1270,7 @@ export default function RoomVisualizer({
 
           <div className="flex-1 overflow-y-auto min-h-0">
             <div className="p-2 space-y-0.5">
-              {isScanning && (
-                <div className="mx-1 my-1.5 py-2 px-3 rounded-lg bg-[#10b981]/15 border border-[#10b981]/35 text-[#34d399] text-[10px] flex items-center justify-center gap-2 tracking-wide font-medium shadow-md">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-ping" />
-                  <span>{getScanStepLabel(scanPercent)}...</span>
-                </div>
-              )}
+              {renderScanningNotice(false)}
               {filtered.length === 0 && (
                 <div className="text-center py-16">
                   <p className="text-white/15 text-[10px]">No rugs found</p>
@@ -1290,7 +1309,7 @@ export default function RoomVisualizer({
           </div>
         </aside>
 
-        <main className="flex-1 relative bg-[#1a1a1a]">
+        <main className="flex-1 relative bg-[#1a1a1a] min-h-[200px] min-w-0 overflow-hidden">
           <div ref={wrap} className="absolute inset-0">
             {room && (
               <FloorRugCanvas
@@ -1325,6 +1344,7 @@ export default function RoomVisualizer({
                 onReadyCanvas={(c) => {
                   canvasNode.current = c;
                 }}
+                onLayoutChange={setCanvasLayout}
                 onOccludeClick={(pt, add) => {
                   const clicks = [...occludeClicks, { x: pt.x, y: pt.y, add }];
                   setOccludeClicks(clicks);
@@ -1333,7 +1353,7 @@ export default function RoomVisualizer({
               />
             )}
             {showBefore && (
-              <div className="absolute top-4 left-4 z-30 bg-black/85 backdrop-blur-md border border-white/20 text-white text-[10px] uppercase tracking-widest px-3.5 py-1.5 rounded-full flex items-center gap-2 shadow-2xl pointer-events-none">
+              <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-30 bg-black/85 backdrop-blur-md border border-white/20 text-white text-[9px] sm:text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-full flex items-center gap-2 shadow-2xl pointer-events-none">
                 <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
                 <span>Original Room (Before)</span>
               </div>
@@ -1377,22 +1397,22 @@ export default function RoomVisualizer({
 
                   {/* Modern High-Tech Green HUD Scan Tag following the beam */}
                   <div
-                    className="absolute right-6 -translate-y-full mb-1.5 pointer-events-none flex items-center gap-2 px-3 py-1 rounded bg-black/90 backdrop-blur-md border border-[#10b981]/50 text-[#10b981] shadow-[0_0_20px_rgba(16,185,129,0.35)]"
+                    className="absolute right-3 sm:right-6 -translate-y-full mb-1.5 pointer-events-none flex items-center gap-2 px-2.5 sm:px-3 py-1 rounded bg-black/90 backdrop-blur-md border border-[#10b981]/50 text-[#10b981] shadow-[0_0_20px_rgba(16,185,129,0.35)]"
                     style={{
-                      top: `${Math.min(95, Math.max(6, scanPercent))}%`,
+                      top: `${Math.min(95, Math.max(8, scanPercent))}%`,
                     }}
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-ping" />
-                    <span className="text-[9px] font-mono tracking-widest uppercase font-semibold">
+                    <span className="text-[8px] sm:text-[9px] font-mono tracking-widest uppercase font-semibold">
                       {getScanStepLabel(scanPercent)} · {Math.round(scanPercent)}%
                     </span>
                   </div>
 
                   {/* Architectural Green Corner Target Brackets */}
-                  <div className="absolute top-6 left-6 w-7 h-7 border-t-2 border-l-2 border-[#10b981]/70" />
-                  <div className="absolute top-6 right-6 w-7 h-7 border-t-2 border-r-2 border-[#10b981]/70" />
-                  <div className="absolute bottom-6 left-6 w-7 h-7 border-b-2 border-l-2 border-[#10b981]/70" />
-                  <div className="absolute bottom-6 right-6 w-7 h-7 border-b-2 border-r-2 border-[#10b981]/70" />
+                  <div className="absolute top-3 left-3 sm:top-6 sm:left-6 w-5 h-5 sm:w-7 sm:h-7 border-t-2 border-l-2 border-[#10b981]/70" />
+                  <div className="absolute top-3 right-3 sm:top-6 sm:right-6 w-5 h-5 sm:w-7 sm:h-7 border-t-2 border-r-2 border-[#10b981]/70" />
+                  <div className="absolute bottom-3 left-3 sm:bottom-6 sm:left-6 w-5 h-5 sm:w-7 sm:h-7 border-b-2 border-l-2 border-[#10b981]/70" />
+                  <div className="absolute bottom-3 right-3 sm:bottom-6 sm:right-6 w-5 h-5 sm:w-7 sm:h-7 border-b-2 border-r-2 border-[#10b981]/70" />
 
                   {/* Subtle 3D floor perspective grid when beam reaches bottom half */}
                   {scanPercent > 35 && (
@@ -1411,10 +1431,10 @@ export default function RoomVisualizer({
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 8 }}
-                className="absolute z-30 bg-[#1a1a1a]/95 backdrop-blur-xl border border-white/15 rounded-xl px-1 py-0.5 flex items-center"
+                className="hidden md:flex absolute z-30 bg-[#1a1a1a]/95 backdrop-blur-xl border border-white/15 rounded-xl px-1 py-0.5 items-center"
                 style={{
-                  left: `${Math.min(Math.max(tb.x - 110, 8), wrapSize.w - 230)}px`,
-                  top: `${Math.min(tb.y, wrapSize.h - 56)}px`,
+                  left: `${Math.max(8, Math.min(tb.x - 110, Math.max(8, wrapSize.w - 230)))}px`,
+                  top: `${Math.max(8, Math.min(tb.y, Math.max(8, wrapSize.h - 56)))}px`,
                 }}
               >
                 <button onClick={rotate} className="flex flex-col items-center gap-0.5 px-4 py-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition">
@@ -1436,26 +1456,26 @@ export default function RoomVisualizer({
           </AnimatePresence>
 
           {measuredCalibrating && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-[#161616]/95 backdrop-blur-xl border border-amber-500/50 rounded-full px-5 py-2.5 flex items-center gap-4 shadow-2xl">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
-                <span className="text-xs text-white/90 font-medium">
-                  Calibrating: Drag 4 corner pins to match {calibRefName}
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-16px)] sm:w-auto max-w-2xl bg-[#161616]/95 backdrop-blur-xl border border-amber-500/50 rounded-2xl sm:rounded-full px-3.5 sm:px-5 py-2 flex flex-col sm:flex-row items-center gap-2 sm:gap-4 shadow-2xl text-center sm:text-left">
+              <div className="flex items-center flex-wrap justify-center gap-1.5 sm:gap-2">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                <span className="text-[11px] sm:text-xs text-white/90 font-medium">
+                  Calibrating: Drag 4 pins to match {calibRefName}
                 </span>
                 <span className="text-[10px] text-amber-400 font-mono">
                   ({calibRefWidthM.toFixed(2)} × {calibRefLengthM.toFixed(2)} m)
                 </span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={confirmCalibration}
-                  className="px-3.5 py-1 text-xs font-semibold uppercase tracking-wider bg-amber-500 hover:bg-amber-400 text-black rounded-full transition shadow"
+                  className="px-3.5 py-1 text-[11px] sm:text-xs font-semibold uppercase tracking-wider bg-amber-500 hover:bg-amber-400 text-black rounded-full transition shadow"
                 >
-                  Confirm Calibration
+                  Confirm
                 </button>
                 <button
                   onClick={() => setMeasuredCalibrating(false)}
-                  className="px-3 py-1 text-xs uppercase tracking-wider bg-white/10 hover:bg-white/20 text-white/70 rounded-full transition"
+                  className="px-3 py-1 text-[11px] sm:text-xs uppercase tracking-wider bg-white/10 hover:bg-white/20 text-white/70 rounded-full transition"
                 >
                   Cancel
                 </button>
@@ -1464,13 +1484,13 @@ export default function RoomVisualizer({
           )}
 
           {showDiagnostics && (
-            <div className="absolute top-4 right-4 z-40 w-80 bg-[#111]/95 backdrop-blur-xl border border-white/15 rounded-xl p-4 text-[11px] font-mono shadow-2xl space-y-3">
+            <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-40 w-[calc(100%-16px)] sm:w-80 max-h-[calc(100%-16px)] overflow-y-auto bg-[#111]/95 backdrop-blur-xl border border-white/15 rounded-xl p-4 text-[11px] font-mono shadow-2xl space-y-3">
               <div className="flex items-center justify-between border-b border-white/10 pb-2">
                 <span className="font-semibold text-white/90 flex items-center gap-1.5 font-sans">
                   <Activity size={13} className="text-amber-400" /> RoomIQ Diagnostics
                 </span>
-                <button onClick={() => setShowDiagnostics(false)} className="text-white/40 hover:text-white">
-                  <X size={13} />
+                <button onClick={() => setShowDiagnostics(false)} className="text-white/40 hover:text-white p-1">
+                  <X size={14} />
                 </button>
               </div>
 
@@ -1554,35 +1574,429 @@ export default function RoomVisualizer({
           )}
 
           {calibrating && (
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 bg-black/70 text-white/80 text-[10px] uppercase tracking-widest px-4 py-2 border border-white/10 rounded">
-              Drag the 4 corners onto the floor · 1 ft grid
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 max-w-[calc(100%-16px)] bg-black/80 backdrop-blur text-white/85 text-[9px] sm:text-[10px] uppercase tracking-widest px-3.5 py-2 border border-white/15 rounded-full flex items-center gap-2.5 text-center">
+              <span>Drag the 4 corners onto the floor</span>
+              <button
+                type="button"
+                onClick={() => setCalibrating(false)}
+                className="px-2.5 py-0.5 rounded-full bg-white text-black font-semibold text-[9px] shrink-0"
+              >
+                Done
+              </button>
             </div>
           )}
           {tool !== "move" && !calibrating && (
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 bg-black/70 text-white/80 text-[10px] uppercase tracking-widest px-4 py-2 border border-white/10 rounded">
-              {tool === "under" ? "Click furniture to hide the rug under it" : "Click to reveal the rug again"}
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 max-w-[calc(100%-16px)] text-center bg-black/75 text-white/85 text-[9px] sm:text-[10px] uppercase tracking-widest px-3.5 py-2 border border-white/10 rounded-full">
+              {tool === "under" ? "Tap furniture to hide the rug under it" : "Tap to reveal the rug again"}
             </div>
           )}
 
-          <div className="absolute bottom-3 right-3 z-20 bg-black/50 text-white/30 text-[8px] uppercase tracking-widest px-3 py-1 border border-white/5 rounded">
+          <div className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3 z-20 max-w-[60%] truncate bg-black/55 text-white/40 text-[8px] uppercase tracking-widest px-2.5 py-1 border border-white/5 rounded pointer-events-none">
             {room?.name}
           </div>
 
-          {rugs.length === 0 && !calibrating && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+          {rugs.length === 0 && !calibrating && !isScanning && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none px-4">
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
-                className="bg-black/40 backdrop-blur px-10 py-8 text-center border border-white/10 rounded-lg"
+                className="bg-black/55 backdrop-blur px-6 py-5 sm:px-10 sm:py-8 text-center border border-white/10 rounded-xl max-w-xs sm:max-w-sm"
               >
-                <ArrowRight size={24} className="mx-auto text-white/20 mb-3 -rotate-180" />
-                <p className="text-white/50 text-sm font-serif">Select a rug from the catalog</p>
-                <p className="text-white/20 text-[9px] uppercase tracking-widest mt-2">Drag on the floor · Toolbar to rotate or copy</p>
+                <ArrowRight size={22} className="hidden md:block mx-auto text-white/30 mb-3 -rotate-180" />
+                <ArrowRight size={20} className="md:hidden mx-auto text-white/30 mb-2 rotate-90" />
+                <p className="text-white/75 text-xs sm:text-sm font-serif">
+                  <span className="hidden md:inline">Select a rug from the catalog</span>
+                  <span className="md:hidden">Pick a rug below to place it</span>
+                </p>
+                <p className="text-white/35 text-[9px] uppercase tracking-widest mt-1.5 sm:mt-2">
+                  Drag on the floor · Resize &amp; rotate anytime
+                </p>
               </motion.div>
             </div>
           )}
         </main>
+
+        {/* Mobile Bottom Control Dock (< 768px) */}
+        <section
+          aria-label="Mobile rug controls"
+          className="md:hidden shrink-0 bg-[#111] border-t border-white/10 flex flex-col z-30 pb-[env(safe-area-inset-bottom)]"
+        >
+          {selected && !showBefore && (
+            <div className="px-3 py-2 border-b border-white/10 bg-white/[0.03] flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => setMobileTab("adjust")}
+                className="flex items-center gap-2.5 min-w-0 text-left flex-1"
+              >
+                <div className="w-8 h-8 rounded-md bg-white/10 shrink-0 overflow-hidden border border-white/15">
+                  <img src={selected.img} alt="" className="w-full h-full object-cover" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-serif text-white truncate leading-tight">{selected.name}</p>
+                  <p className="text-[10px] text-white/50 truncate mt-0.5">
+                    {selected.w} × {selected.h} ft · {selectedRotDeg}°
+                  </p>
+                </div>
+              </button>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={rotate}
+                  aria-label="Rotate rug 90 degrees"
+                  className="min-w-[36px] min-h-[36px] px-2 rounded-lg bg-white/5 hover:bg-white/15 active:bg-white/20 text-white/80 flex items-center justify-center transition"
+                >
+                  <RotateCw size={15} />
+                </button>
+                <button
+                  type="button"
+                  onClick={copyRug}
+                  aria-label="Duplicate rug"
+                  className="min-w-[36px] min-h-[36px] px-2 rounded-lg bg-white/5 hover:bg-white/15 active:bg-white/20 text-white/80 flex items-center justify-center transition"
+                >
+                  <Copy size={15} />
+                </button>
+                <button
+                  type="button"
+                  onClick={remove}
+                  aria-label="Remove rug"
+                  className="min-w-[36px] min-h-[36px] px-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 active:bg-red-500/25 text-red-400 flex items-center justify-center transition"
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center border-b border-white/10 bg-[#0d0d0d]">
+            <button
+              type="button"
+              onClick={() => setMobileTab("rugs")}
+              className={`flex-1 min-h-[38px] px-2 text-[10px] uppercase tracking-wider font-medium flex items-center justify-center gap-1.5 border-b-2 transition ${
+                mobileTab === "rugs"
+                  ? "border-[#a82028] text-white bg-white/[0.03]"
+                  : "border-transparent text-white/45 hover:text-white/75"
+              }`}
+            >
+              <Layers size={12} />
+              <span>Rugs</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileTab("adjust")}
+              className={`flex-1 min-h-[38px] px-2 text-[10px] uppercase tracking-wider font-medium flex items-center justify-center gap-1.5 border-b-2 transition ${
+                mobileTab === "adjust"
+                  ? "border-[#a82028] text-white bg-white/[0.03]"
+                  : "border-transparent text-white/45 hover:text-white/75"
+              }`}
+            >
+              <Ruler size={12} />
+              <span>Size &amp; Angle</span>
+              {selected && <span className="w-1.5 h-1.5 rounded-full bg-[#a82028]" />}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileTab("ai")}
+              className={`flex-1 min-h-[38px] px-2 text-[10px] uppercase tracking-wider font-medium flex items-center justify-center gap-1.5 border-b-2 transition ${
+                mobileTab === "ai"
+                  ? "border-[#a82028] text-white bg-white/[0.03]"
+                  : "border-transparent text-white/45 hover:text-white/75"
+              }`}
+            >
+              <Sparkles size={12} className="text-[#a82028]" />
+              <span>Room AI</span>
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  analysisStatus === "analyzing"
+                    ? "bg-amber-400 animate-pulse"
+                    : analysisStatus === "success"
+                    ? "bg-emerald-400"
+                    : analysisStatus === "error"
+                    ? "bg-red-400"
+                    : "bg-white/30"
+                }`}
+              />
+            </button>
+            {mobileTab === "rugs" && (
+              <button
+                type="button"
+                onClick={() => setMobileDrawerExpanded((v) => !v)}
+                aria-label={mobileDrawerExpanded ? "Collapse rug list" : "Search and browse all rugs"}
+                className="min-h-[38px] px-3 border-l border-white/10 text-white/60 hover:text-white flex items-center gap-1 text-[10px] uppercase tracking-wider shrink-0"
+              >
+                {mobileDrawerExpanded ? (
+                  <>
+                    <ChevronDown size={13} />
+                    <span>Compact</span>
+                  </>
+                ) : (
+                  <>
+                    <Search size={11} />
+                    <ChevronUp size={13} />
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+
+          {mobileTab === "rugs" && (
+            <div className="flex flex-col">
+              {renderScanningNotice(true)}
+              {!mobileDrawerExpanded ? (
+                <div className="flex items-stretch gap-2.5 overflow-x-auto px-3 py-2.5 overscroll-x-contain">
+                  {filtered.length === 0 ? (
+                    <div className="w-full py-4 text-center flex items-center justify-center gap-3">
+                      <span className="text-white/40 text-xs">No rugs match &ldquo;{query}&rdquo;</span>
+                      {query && (
+                        <button
+                          type="button"
+                          onClick={() => setQuery("")}
+                          className="text-[10px] uppercase tracking-wider px-2.5 py-1 rounded border border-white/15 text-white/80"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    filtered.map((p: VisualizerProduct) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => selectProduct(p)}
+                        disabled={isScanning}
+                        className={`w-[88px] shrink-0 text-left flex flex-col rounded-lg p-1.5 border transition ${
+                          isScanning
+                            ? "opacity-35 cursor-not-allowed border-white/5"
+                            : selected?.productId === p.id
+                            ? "bg-[#7A0C13]/20 border-[#a82028]"
+                            : "bg-white/[0.03] border-white/10 active:bg-white/[0.08]"
+                        }`}
+                      >
+                        <div className="w-full aspect-square rounded bg-white/5 overflow-hidden">
+                          <img
+                            src={p.images?.[0] || p.image || ""}
+                            alt={p.name || "Rug"}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "https://placehold.co/80/1a1a1a/333?text=·";
+                            }}
+                          />
+                        </div>
+                        <p className="text-[10px] text-white/85 truncate mt-1.5 leading-tight">{p.name}</p>
+                        <p className="text-[9px] text-white/40 truncate mt-0.5">{p.size || p.category || "Rug"}</p>
+                      </button>
+                    ))
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col">
+                  <div className="p-2.5 border-b border-white/10 flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/30" />
+                      <input
+                        type="text"
+                        placeholder="Search rugs..."
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg text-white text-base py-1.5 pl-8 pr-8 placeholder-white/30 focus:outline-none focus:border-[#7A0C13]/60"
+                      />
+                      {query && (
+                        <button
+                          type="button"
+                          onClick={() => setQuery("")}
+                          aria-label="Clear search"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white p-1"
+                        >
+                          <X size={13} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div
+                    className={`grid grid-cols-2 gap-2 p-2.5 overflow-y-auto overscroll-contain ${
+                      embedded ? "max-h-[185px]" : "max-h-[34dvh]"
+                    }`}
+                  >
+                    {filtered.length === 0 ? (
+                      <div className="col-span-2 py-8 text-center text-white/40 text-xs">No rugs found</div>
+                    ) : (
+                      filtered.map((p: VisualizerProduct) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => {
+                            selectProduct(p);
+                            if (!isScanning) setMobileDrawerExpanded(false);
+                          }}
+                          disabled={isScanning}
+                          className={`flex items-center gap-2 p-2 rounded-lg text-left border transition ${
+                            isScanning
+                              ? "opacity-35 cursor-not-allowed border-white/5"
+                              : selected?.productId === p.id
+                              ? "bg-[#7A0C13]/20 border-[#a82028]"
+                              : "bg-white/[0.03] border-white/10 active:bg-white/[0.08]"
+                          }`}
+                        >
+                          <div className="w-11 h-11 rounded bg-white/5 shrink-0 overflow-hidden">
+                            <img
+                              src={p.images?.[0] || p.image || ""}
+                              alt={p.name || "Rug"}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = "https://placehold.co/80/1a1a1a/333?text=·";
+                              }}
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[11px] text-white/85 truncate leading-tight">{p.name}</p>
+                            <p className="text-[9px] text-white/40 truncate mt-0.5">{p.size || p.category || "Rug"}</p>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {mobileTab === "adjust" && (
+            <div className={`p-3 space-y-3 overflow-y-auto overscroll-contain ${embedded ? "max-h-[210px]" : "max-h-[36dvh]"}`}>
+              {!selected ? (
+                <div className="py-4 text-center space-y-2.5">
+                  <p className="text-xs text-white/50">Tap a rug on the floor or choose one from the catalog to resize &amp; rotate.</p>
+                  <button
+                    type="button"
+                    onClick={() => setMobileTab("rugs")}
+                    className="px-4 py-2 rounded-full bg-white text-black text-[10px] uppercase tracking-wider font-semibold"
+                  >
+                    Browse Rugs
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <p className="text-[9px] uppercase tracking-widest text-white/40 mb-1.5">Rug Size</p>
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 overscroll-x-contain">
+                      {SIZES.map((s, i) => (
+                        <button
+                          key={s.label}
+                          type="button"
+                          onClick={() => {
+                            setSizeIdx(i);
+                            resizeTo(s);
+                          }}
+                          className={`min-h-[34px] px-3 rounded-lg text-[11px] tracking-wide border shrink-0 transition ${
+                            selected.w === s.w && selected.h === s.h
+                              ? "bg-white text-black border-white font-semibold"
+                              : "border-white/15 text-white/65 bg-white/[0.03]"
+                          }`}
+                        >
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <p className="text-[9px] uppercase tracking-widest text-white/40">
+                        Rotation: <span className="text-white font-mono">{selectedRotDeg}°</span>
+                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setRotationDeg((selectedRotDeg + 315) % 360)}
+                          className="px-2 py-0.5 text-[10px] rounded border border-white/15 text-white/70 bg-white/5"
+                        >
+                          -45°
+                        </button>
+                        <button
+                          type="button"
+                          onClick={rotate}
+                          className="px-2 py-0.5 text-[10px] rounded border border-white/15 text-white/70 bg-white/5"
+                        >
+                          +90°
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRotationDeg(0)}
+                          className="px-2 py-0.5 text-[10px] rounded border border-white/15 text-white/70 bg-white/5"
+                        >
+                          Reset
+                        </button>
+                      </div>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={360}
+                      step={1}
+                      value={selectedRotDeg}
+                      onChange={(e) => setRotationDeg(+e.target.value)}
+                      className="w-full h-7 accent-[#7A0C13] cursor-pointer"
+                    />
+                  </div>
+
+                  {renderExistingRugToggle(true)}
+                </>
+              )}
+            </div>
+          )}
+
+          {mobileTab === "ai" && (
+            <div className={`p-3 space-y-2.5 overflow-y-auto overscroll-contain ${embedded ? "max-h-[210px]" : "max-h-[36dvh]"}`}>
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] uppercase tracking-widest text-white/60 flex items-center gap-1.5 font-medium">
+                  <Sparkles size={12} className="text-[#a82028]" /> AI Room Intelligence
+                </p>
+                {renderAnalysisStatusBadge()}
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-[11px] bg-white/[0.03] border border-white/10 rounded-lg p-2.5">
+                <div>
+                  <span className="block text-[9px] text-white/40 uppercase tracking-wider">Space Type</span>
+                  <span className="text-white/90 font-serif">{roomType}</span>
+                </div>
+                <div>
+                  <span className="block text-[9px] text-white/40 uppercase tracking-wider">Estimated Floor</span>
+                  <span className="text-white/80 font-mono text-[10px]">{floorSize.widthFt} × {floorSize.depthFt} ft</span>
+                </div>
+              </div>
+              {analysisStatus === "error" && analysisError ? (
+                <div className="text-[10px] text-red-400/90 leading-relaxed bg-red-400/10 p-2 rounded-lg border border-red-400/20">
+                  {analysisError}
+                </div>
+              ) : (
+                <div className="text-[10px] text-white/55 leading-relaxed bg-white/[0.03] p-2 rounded-lg border border-white/5">
+                  {placementReason}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => room && triggerRoomAnalysis(room.src, room.name)}
+                  disabled={analysisStatus === "analyzing"}
+                  className="flex-1 min-h-[36px] flex items-center justify-center gap-1.5 py-2 text-[10px] uppercase tracking-wider bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 rounded-lg transition disabled:opacity-50"
+                >
+                  {analysisStatus === "analyzing" ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
+                  {analysisStatus === "error" ? "Retry Analysis" : "Re-Analyze"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowBefore((prev) => !prev)}
+                  className={`flex-1 min-h-[36px] px-3 py-2 text-[10px] uppercase tracking-wider border rounded-lg transition flex items-center justify-center gap-1.5 font-medium ${
+                    showBefore
+                      ? "bg-[#7A0C13] border-[#7A0C13] text-white shadow"
+                      : "bg-white/5 border-white/10 text-white/80"
+                  }`}
+                >
+                  <Eye size={11} />
+                  {showBefore ? "Original (Before)" : "Before / After"}
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
       </div>
 
       {/* Invalid Room Image Detected Modal */}
@@ -1601,7 +2015,7 @@ export default function RoomVisualizer({
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
               transition={{ type: "spring", damping: 25, stiffness: 280 }}
-              className="relative bg-[#121214] text-white rounded-3xl shadow-[0_25px_70px_rgba(0,0,0,0.9),0_0_50px_rgba(245,158,11,0.15)] p-7 sm:p-9 max-w-lg w-full text-center border border-amber-500/30 flex flex-col items-center select-none"
+              className="relative bg-[#121214] text-white rounded-3xl shadow-[0_25px_70px_rgba(0,0,0,0.9),0_0_50px_rgba(245,158,11,0.15)] p-5 sm:p-9 max-w-lg w-full max-h-[90dvh] overflow-y-auto text-center border border-amber-500/30 flex flex-col items-center select-none"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Close button */}
@@ -1706,14 +2120,14 @@ export default function RoomVisualizer({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur flex items-center justify-center p-6"
+            className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur flex items-center justify-center p-3 sm:p-6"
             onClick={() => setShowCalibrationModal(false)}
           >
             <motion.div
               initial={{ scale: 0.95 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.95 }}
-              className="bg-[#121212] border border-white/15 p-6 max-w-xl w-full rounded-xl shadow-2xl space-y-4"
+              className="bg-[#121212] border border-white/15 p-4 sm:p-6 max-w-xl w-full max-h-[85dvh] overflow-y-auto rounded-xl shadow-2xl space-y-4"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex justify-between items-start border-b border-white/10 pb-3">
@@ -1725,14 +2139,14 @@ export default function RoomVisualizer({
                     Select a known floor reference or tile to calibrate true physical scale (metric homography).
                   </p>
                 </div>
-                <button onClick={() => setShowCalibrationModal(false)} className="text-white/40 hover:text-white">
+                <button onClick={() => setShowCalibrationModal(false)} className="text-white/40 hover:text-white p-1">
                   <X size={18} />
                 </button>
               </div>
 
               <div className="space-y-2">
                 <p className="text-[9px] uppercase tracking-wider text-white/40 font-medium">Standard Floor Tile & Object Presets</p>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {[
                     { label: "Floor Tile 60 × 60 cm", type: "tile" as const, w: 0.60, l: 0.60, desc: "Standard porcelain/ceramic tile" },
                     { label: "Floor Tile 30 × 30 cm", type: "tile" as const, w: 0.30, l: 0.30, desc: "Classic 1-foot tile" },
@@ -1760,7 +2174,7 @@ export default function RoomVisualizer({
 
               <div className="pt-2 border-t border-white/10">
                 <p className="text-[9px] uppercase tracking-wider text-white/40 mb-2 font-medium">Or Custom Rectangular Object</p>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="number"
                     step="0.05"
@@ -1768,7 +2182,7 @@ export default function RoomVisualizer({
                     placeholder="Width (m)"
                     id="custom-cal-w"
                     defaultValue="0.60"
-                    className="flex-1 bg-white/5 border border-white/10 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-400"
+                    className="flex-1 bg-white/5 border border-white/10 rounded px-3 py-2 sm:py-1.5 text-base sm:text-xs text-white focus:outline-none focus:border-amber-400"
                   />
                   <input
                     type="number"
@@ -1777,7 +2191,7 @@ export default function RoomVisualizer({
                     placeholder="Length (m)"
                     id="custom-cal-l"
                     defaultValue="0.60"
-                    className="flex-1 bg-white/5 border border-white/10 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-400"
+                    className="flex-1 bg-white/5 border border-white/10 rounded px-3 py-2 sm:py-1.5 text-base sm:text-xs text-white focus:outline-none focus:border-amber-400"
                   />
                   <button
                     onClick={() => {
@@ -1787,7 +2201,7 @@ export default function RoomVisualizer({
                       const l = parseFloat(lInput?.value || "0.6");
                       startMeasuredCalibration("custom_rectangle", `Custom Object (${w} × ${l} m)`, w, l);
                     }}
-                    className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-black text-xs font-semibold uppercase tracking-wider rounded transition"
+                    className="px-4 py-2 sm:py-1.5 bg-amber-500 hover:bg-amber-400 text-black text-xs font-semibold uppercase tracking-wider rounded transition"
                   >
                     Calibrate
                   </button>
@@ -1813,18 +2227,18 @@ export default function RoomVisualizer({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur flex items-center justify-center p-6"
+            className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur flex items-center justify-center p-3 sm:p-6"
             onClick={() => setMissingDimProduct(null)}
           >
             <motion.div
               initial={{ scale: 0.95 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.95 }}
-              className="bg-[#121212] border border-white/15 p-6 max-w-md w-full rounded-xl shadow-2xl space-y-4"
+              className="bg-[#121212] border border-white/15 p-4 sm:p-6 max-w-md w-full max-h-[85dvh] overflow-y-auto rounded-xl shadow-2xl space-y-4"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex justify-between items-start border-b border-white/10 pb-3">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   <div className="w-12 h-12 bg-white/5 rounded overflow-hidden shrink-0">
                     <img
                       src={missingDimProduct.images?.[0] || missingDimProduct.image || ""}
@@ -1832,21 +2246,21 @@ export default function RoomVisualizer({
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <div>
-                    <h2 className="text-sm font-serif text-white">{missingDimProduct.name}</h2>
+                  <div className="min-w-0">
+                    <h2 className="text-sm font-serif text-white truncate">{missingDimProduct.name}</h2>
                     <p className="text-[10px] text-amber-400 mt-0.5 flex items-center gap-1">
-                      <AlertTriangle size={11} /> Physical dimensions required for accurate placement
+                      <AlertTriangle size={11} className="shrink-0" /> Physical dimensions required
                     </p>
                   </div>
                 </div>
-                <button onClick={() => setMissingDimProduct(null)} className="text-white/40 hover:text-white">
+                <button onClick={() => setMissingDimProduct(null)} className="text-white/40 hover:text-white p-1">
                   <X size={18} />
                 </button>
               </div>
 
               <div className="space-y-2">
                 <p className="text-[10px] uppercase tracking-wider text-white/50">Select Dimensions</p>
-                <div className="grid grid-cols-3 gap-1.5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {[
                     { label: "5 × 7 ft", w: 5, h: 7 },
                     { label: "5 × 8 ft", w: 5, h: 8 },
@@ -1886,37 +2300,37 @@ export default function RoomVisualizer({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur flex items-center justify-center p-6"
+            className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur flex items-center justify-center p-3 sm:p-6"
             onClick={() => setRoomModal(false)}
           >
             <motion.div
               initial={{ scale: 0.95 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.95 }}
-              className="bg-[#111] border border-white/10 p-6 max-w-3xl w-full max-h-[80vh] overflow-y-auto rounded-lg"
+              className="bg-[#111] border border-white/10 p-4 sm:p-6 max-w-3xl w-full max-h-[85dvh] overflow-y-auto rounded-xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex justify-between mb-5">
-                <h2 className="text-lg font-serif text-white">Change Room</h2>
-                <button onClick={() => setRoomModal(false)} className="text-white/40 hover:text-white">
+              <div className="flex justify-between items-center mb-4 sm:mb-5">
+                <h2 className="text-base sm:text-lg font-serif text-white">Change Room</h2>
+                <button onClick={() => setRoomModal(false)} className="text-white/50 hover:text-white p-1">
                   <X size={18} />
                 </button>
               </div>
-              <label className="block cursor-pointer border border-dashed border-white/20 hover:border-[#7A0C13] p-5 text-center transition group mb-5 rounded">
-                <UploadCloud size={22} className="mx-auto text-white/20 group-hover:text-[#7A0C13] mb-1" />
-                <span className="text-xs text-white/40 uppercase tracking-widest">Upload Your Room</span>
+              <label className="block cursor-pointer border border-dashed border-white/20 hover:border-[#7A0C13] p-4 sm:p-5 text-center transition group mb-4 sm:mb-5 rounded-lg">
+                <UploadCloud size={22} className="mx-auto text-white/30 group-hover:text-[#7A0C13] mb-1" />
+                <span className="text-xs text-white/60 uppercase tracking-widest">Upload Your Room</span>
                 <input type="file" accept="image/*" className="hidden" onChange={uploadRoom} />
               </label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                 {ROOMS.map((r) => (
                   <button
                     key={r.name}
                     onClick={() => switchRoom(r)}
-                    className={`relative overflow-hidden aspect-[4/3] rounded ${room?.src === r.src ? "ring-2 ring-[#7A0C13]" : "ring-1 ring-white/10"}`}
+                    className={`relative overflow-hidden aspect-[4/3] rounded-lg text-left ${room?.src === r.src ? "ring-2 ring-[#7A0C13]" : "ring-1 ring-white/10"}`}
                   >
                     <img src={r.src} alt="" className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" />
-                    <div className="absolute inset-0 bg-black/30" />
-                    <p className="absolute bottom-1.5 left-2 text-[9px] text-white drop-shadow-lg">{r.name}</p>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+                    <p className="absolute bottom-1.5 left-2 right-2 text-[10px] sm:text-[11px] text-white drop-shadow-lg leading-tight truncate">{r.name}</p>
                   </button>
                 ))}
               </div>
@@ -1931,22 +2345,32 @@ export default function RoomVisualizer({
 function Btn({
   icon,
   label,
+  mobileLabel,
   onClick,
   active,
 }: {
   icon: React.ReactNode;
   label: string;
+  mobileLabel?: string;
   onClick: () => void;
   active?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-1 text-[10px] uppercase tracking-widest px-2 py-1 border transition ${
-        active ? "text-white border-white/30 bg-white/10" : "text-white/35 hover:text-white border-white/[0.06] hover:border-white/20"
+      className={`min-h-[34px] flex items-center gap-1.5 text-[9px] sm:text-[10px] uppercase tracking-wider sm:tracking-widest px-2.5 py-1.5 border rounded-md sm:rounded transition ${
+        active ? "text-white border-white/30 bg-white/10" : "text-white/70 md:text-white/45 hover:text-white border-white/10 hover:border-white/25 bg-white/[0.04]"
       }`}
     >
-      {icon} {label}
+      {icon}
+      {mobileLabel ? (
+        <>
+          <span className="sm:hidden">{mobileLabel}</span>
+          <span className="hidden sm:inline">{label}</span>
+        </>
+      ) : (
+        <span>{label}</span>
+      )}
     </button>
   );
 }

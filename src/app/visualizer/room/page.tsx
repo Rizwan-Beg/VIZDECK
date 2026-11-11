@@ -29,7 +29,7 @@ export default function FullscreenRugVisualizerPage() {
       }
     >
       <RoomVisualizer embedded={false} />
-      <Toaster position="bottom-right" />
+      <Toaster position="top-center" containerStyle={{ zIndex: 10050, top: 54 }} />
     </Suspense>
   );
 }

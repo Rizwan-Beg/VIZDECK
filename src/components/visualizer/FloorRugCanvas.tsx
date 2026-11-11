@@ -7,7 +7,7 @@ import {
   M_TO_FT,
   applyH,
   canvasToImage,
-  coverLayout,
+  fitRoomLayout,
   floorToImageH,
   imageToCanvas,
   invertH,
@@ -52,6 +52,7 @@ type Props = {
   onSelect: (id: string | null) => void;
   onToolbar: (pos: { x: number; y: number } | null) => void;
   onReadyCanvas: (canvas: HTMLCanvasElement | null) => void;
+  onLayoutChange?: (layout: ImageLayout) => void;
   onOccludeClick: (pt: Vec2, add: boolean) => void;
 };
 
@@ -266,6 +267,7 @@ export default function FloorRugCanvas({
   onSelect,
   onToolbar,
   onReadyCanvas,
+  onLayoutChange,
   onOccludeClick,
 }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -316,6 +318,7 @@ export default function FloorRugCanvas({
   const onSelectRef = useRef(onSelect);
   const onToolbarRef = useRef(onToolbar);
   const onReadyCanvasRef = useRef(onReadyCanvas);
+  const onLayoutChangeRef = useRef(onLayoutChange);
   const onOccludeClickRef = useRef(onOccludeClick);
   const lastTbRef = useRef<string>("");
   const lastRhRef = useRef<string>("");
@@ -345,6 +348,7 @@ export default function FloorRugCanvas({
     onSelectRef.current = onSelect;
     onToolbarRef.current = onToolbar;
     onReadyCanvasRef.current = onReadyCanvas;
+    onLayoutChangeRef.current = onLayoutChange;
     onOccludeClickRef.current = onOccludeClick;
   }, [
     rugs,
@@ -370,6 +374,7 @@ export default function FloorRugCanvas({
     onSelect,
     onToolbar,
     onReadyCanvas,
+    onLayoutChange,
     onOccludeClick,
   ]);
 
@@ -476,13 +481,14 @@ export default function FloorRugCanvas({
       canvas.height = ph;
     }
 
-    const layout = coverLayout(cssW, cssH, roomImg.naturalWidth, roomImg.naturalHeight);
+    const layout = fitRoomLayout(cssW, cssH, roomImg.naturalWidth, roomImg.naturalHeight);
     layoutRef.current = layout;
     setLayout((prev) =>
       prev && prev.x === layout.x && prev.y === layout.y && prev.w === layout.w && prev.h === layout.h && prev.canvasW === layout.canvasW && prev.canvasH === layout.canvasH
         ? prev
         : layout
     );
+    onLayoutChangeRef.current?.(layout);
     const isCalibrated = Boolean(calibrationRef.current?.isCalibrated && calibrationRef.current.H_metric);
     const H = isCalibrated
       ? calibrationRef.current!.H_metric
@@ -705,7 +711,10 @@ export default function FloorRugCanvas({
             }
           }
           const top = scr.reduce((a, p) => (p.y < a.y ? p : a), scr[0]);
-          const rh = { x: top.x, y: top.y - 22 };
+          const rh = {
+            x: Math.min(Math.max(top.x, 20), Math.max(20, cssW - 20)),
+            y: Math.min(Math.max(top.y - 24, 20), Math.max(20, cssH - 20)),
+          };
           if (Number.isFinite(rh.x) && Number.isFinite(rh.y)) {
             const rhKey = `${rh.x.toFixed(0)}:${rh.y.toFixed(0)}`;
             if (lastRhRef.current !== rhKey) {
@@ -907,7 +916,7 @@ export default function FloorRugCanvas({
       const p = imageToCanvas(floorRef.current[k], layout);
       const dx = p.x - pt.x;
       const dy = p.y - pt.y;
-      if (dx * dx + dy * dy < 22 * 22) return k;
+      if (dx * dx + dy * dy < 30 * 30) return k;
     }
     return null;
   };
@@ -921,7 +930,7 @@ export default function FloorRugCanvas({
       const p = imageToCanvas(corners[i], layout);
       const dx = p.x - pt.x;
       const dy = p.y - pt.y;
-      if (dx * dx + dy * dy < 26 * 26) return i;
+      if (dx * dx + dy * dy < 32 * 32) return i;
     }
     return null;
   };
@@ -935,7 +944,9 @@ export default function FloorRugCanvas({
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {}
     const pt = localPoint(e);
 
     // 1. Measured floor reference calibration handles
@@ -984,7 +995,9 @@ export default function FloorRugCanvas({
 
   const beginRotate = (e: React.PointerEvent) => {
     e.stopPropagation();
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {}
     const rug = rugsRef.current.find((r) => r.instanceId === selectedRef.current);
     if (!rug) return;
     const pt = localPoint(e);
@@ -1078,11 +1091,12 @@ export default function FloorRugCanvas({
   });
 
   return (
-    <div ref={wrapRef} className="absolute inset-0 overflow-hidden bg-[#0d0d0d]">
+    <div ref={wrapRef} className="absolute inset-0 overflow-hidden bg-[#0d0d0d] touch-none select-none">
       {layout && (
         <img
           src={roomSrc}
           alt="Room space"
+          draggable={false}
           className="absolute pointer-events-none select-none"
           style={{
             left: `${layout.x}px`,
@@ -1106,7 +1120,7 @@ export default function FloorRugCanvas({
       {calibrating && layout && handles.map((h) => (
         <div
           key={h.key}
-          className="absolute z-20 w-4 h-4 -ml-2 -mt-2 rounded-full bg-white border-2 border-[#7A0C13] pointer-events-none shadow-md"
+          className="absolute z-20 w-5 h-5 -ml-2.5 -mt-2.5 md:w-4 md:h-4 md:-ml-2 md:-mt-2 rounded-full bg-white border-2 border-[#7A0C13] pointer-events-none shadow-md"
           style={{ left: h.x, top: h.y }}
         />
       ))}
@@ -1158,13 +1172,14 @@ export default function FloorRugCanvas({
         <button
           type="button"
           aria-label="Rotate rug"
-          className="absolute z-20 w-7 h-7 -ml-3.5 -mt-3.5 rounded-full bg-white text-black flex items-center justify-center border border-black/20 cursor-grab active:cursor-grabbing shadow-lg"
+          className="absolute z-20 w-9 h-9 -ml-[18px] -mt-[18px] md:w-7 md:h-7 md:-ml-3.5 md:-mt-3.5 rounded-full bg-white text-black flex items-center justify-center border border-black/20 cursor-grab active:cursor-grabbing shadow-lg touch-none"
           style={{ left: rotHandle.x, top: rotHandle.y }}
           onPointerDown={beginRotate}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
         >
-          <RotateCw size={13} strokeWidth={2.2} />
+          <RotateCw size={14} strokeWidth={2.2} />
         </button>
       )}
     </div>
