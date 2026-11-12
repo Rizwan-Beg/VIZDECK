@@ -88,7 +88,9 @@ varying vec2 v_uv;
 uniform sampler2D u_tex;
 uniform sampler2D u_room;
 uniform sampler2D u_floorSupport;
+uniform sampler2D u_mask;
 uniform float u_hasFloorSupport;
+uniform float u_hasMask;
 uniform float u_horizonY;
 uniform float u_shade;
 uniform float u_alpha;
@@ -104,7 +106,7 @@ void main() {
 
   vec2 cssPt = vec2(gl_FragCoord.x, u_css.y * u_dpr - gl_FragCoord.y) / u_dpr;
   vec2 ruv = (cssPt - u_layout.xy) / u_layout.zw;
-  
+
   // Roomvo-grade wall boundary clipping:
   // Discard fragments outside the photograph bounds
   if (ruv.x < 0.0 || ruv.x > 1.0 || ruv.y < 0.0 || ruv.y > 1.0) discard;
@@ -118,14 +120,37 @@ void main() {
     if (ruv.y < u_horizonY - 0.004) discard;
   }
 
-  vec3 room = texture2D(u_room, ruv).rgb;
+  // Low-frequency room ambient lighting (smoothed across ~2% UV radius so floor/carpet patterns never bleed through)
+  vec2 dAmb = vec2(0.016, 0.012);
+  vec3 ambRoom = (
+    texture2D(u_room, clamp(ruv, 0.0, 1.0)).rgb * 0.30 +
+    texture2D(u_room, clamp(ruv + vec2(-dAmb.x, -dAmb.y), 0.0, 1.0)).rgb * 0.175 +
+    texture2D(u_room, clamp(ruv + vec2( dAmb.x, -dAmb.y), 0.0, 1.0)).rgb * 0.175 +
+    texture2D(u_room, clamp(ruv + vec2(-dAmb.x,  dAmb.y), 0.0, 1.0)).rgb * 0.175 +
+    texture2D(u_room, clamp(ruv + vec2( dAmb.x,  dAmb.y), 0.0, 1.0)).rgb * 0.175
+  );
 
-  // Extract room luminance for natural ambient lighting
-  float lum = dot(room, vec3(0.299, 0.587, 0.114));
+  float lum = dot(ambRoom, vec3(0.299, 0.587, 0.114));
+  float lightFactor = mix(1.0, clamp(0.76 + lum * 0.44, 0.78, 1.15), u_lightMix * 0.55);
 
-  // Ground the rug with subtle room luminance without washing out or distorting rug colors
-  float lightFactor = mix(1.0, clamp(0.86 + lum * 0.28, 0.88, 1.12), u_lightMix * 0.30);
-  vec3 lit = c.rgb * lightFactor * u_shade;
+  // Subtle ambient white-balance harmony with the scene light
+  vec3 tint = ambRoom / max(lum, 0.08);
+  tint = clamp(tint, vec3(0.84), vec3(1.16));
+  vec3 balanced = mix(c.rgb, c.rgb * tint, u_lightMix * 0.10);
+
+  // Soft contact & ambient occlusion shadow where foreground furniture meets the rug
+  float aoShadow = 1.0;
+  if (u_hasMask > 0.5) {
+    float mUp1 = texture2D(u_mask, clamp(ruv - vec2(0.0, 0.004), 0.0, 1.0)).r;
+    float mUp2 = texture2D(u_mask, clamp(ruv - vec2(0.0, 0.010), 0.0, 1.0)).r;
+    float mL   = texture2D(u_mask, clamp(ruv + vec2(-0.005, -0.002), 0.0, 1.0)).r;
+    float mR   = texture2D(u_mask, clamp(ruv + vec2( 0.005, -0.002), 0.0, 1.0)).r;
+    float mDn  = texture2D(u_mask, clamp(ruv + vec2(0.0, 0.004), 0.0, 1.0)).r;
+    float prox = max(max(mUp1 * 0.95, mUp2 * 0.65), max(max(mL, mR) * 0.80, mDn * 0.45));
+    aoShadow = 1.0 - 0.22 * smoothstep(0.08, 0.85, prox) * u_lightMix;
+  }
+
+  vec3 lit = balanced * lightFactor * u_shade * aoShadow;
 
   // Preserve source texture alpha and user configured opacity with antialiased borders
   gl_FragColor = vec4(lit, outAlpha);
@@ -187,11 +212,10 @@ uniform sampler2D u_room;
 uniform sampler2D u_mask;
 void main() {
   float m = texture2D(u_mask, v_uv).r;
-  if (m < 0.10) discard;
+  if (m < 0.12) discard;
   vec3 room = texture2D(u_room, v_uv).rgb;
-  // Solid foreground furniture: alpha is 1.0 inside furniture silhouette,
-  // with tight antialiasing transition to avoid transparency ghosting.
-  float alpha = smoothstep(0.10, 0.45, m);
+  // Crisp foreground furniture silhouette with smooth sub-pixel antialiasing along legs & clutter
+  float alpha = smoothstep(0.12, 0.52, m);
   gl_FragColor = vec4(room, alpha);
 }
 `;
@@ -672,6 +696,20 @@ export default function FloorRugCanvas({
       } else {
         gl.uniform1f(gl.getUniformLocation(texP, "u_hasFloorSupport"), 0.0);
       }
+
+      const activeMaskUrlTex = occMaskUrlRef.current;
+      // `maskTex` is the current AI baseline plus any user Under/Reveal edits.
+      // It must win over the raw URL texture or real-world mask corrections appear
+      // to have no effect after the backend response arrives.
+      const aoMaskTex = maskTex.current || (activeMaskUrlTex ? texCache.current.get(activeMaskUrlTex) : null);
+      if (aoMaskTex && (occRef.current || activeMaskUrlTex)) {
+        gl.activeTexture(gl.TEXTURE3);
+        gl.bindTexture(gl.TEXTURE_2D, aoMaskTex);
+        gl.uniform1i(gl.getUniformLocation(texP, "u_mask"), 3);
+        gl.uniform1f(gl.getUniformLocation(texP, "u_hasMask"), 1.0);
+      } else {
+        gl.uniform1f(gl.getUniformLocation(texP, "u_hasMask"), 0.0);
+      }
     };
     const bindSolid = () => {
       gl.useProgram(solP);
@@ -774,7 +812,7 @@ export default function FloorRugCanvas({
     for (const rug of rugsRef.current) {
       const corners = rugFloorCornersM(rug);
       const zNorm = Math.min(1, Math.max(0, (rug.zM ?? (rug.z * FT_TO_M)) / (sizeRef.current.depthFt * FT_TO_M)));
-      const shade = 1 - zNorm * 0.22;
+      const shade = 1 - zNorm * 0.10;
 
       const mesh = buildRugMesh(corners);
       const tex = texCache.current.get(rug.img);
@@ -847,10 +885,12 @@ export default function FloorRugCanvas({
     }
 
     const activeMaskUrl = occMaskUrlRef.current;
-    // Prefer native high-resolution AI mask texture directly when available to avoid downsample blur
-    const mask = (activeMaskUrl ? texCache.current.get(activeMaskUrl) : null) || maskTex.current;
+    // Use the composited mask first: it contains the native AI result and precise
+    // user corrections. Falling back to the URL preserves the first frame while it
+    // is still being prepared.
+    const mask = maskTex.current || (activeMaskUrl ? texCache.current.get(activeMaskUrl) : null);
     const roomTex2 = floorPlateTex || texCache.current.get(roomSrcRef.current);
-    if (mask && roomTex2 && (activeMaskUrl || occRef.current)) {
+    if (mask && roomTex2 && (occRef.current || activeMaskUrl)) {
       const tl = pxToClip(layout.x, layout.y, cssW, cssH);
       const tr = pxToClip(layout.x + layout.w, layout.y, cssW, cssH);
       const br = pxToClip(layout.x + layout.w, layout.y + layout.h, cssW, cssH);
@@ -991,6 +1031,7 @@ export default function FloorRugCanvas({
     const gl = glRef.current;
     if (!gl) return;
     if (!occlusion) {
+      if (maskTex.current) gl.deleteTexture(maskTex.current);
       maskTex.current = null;
       draw();
       return;

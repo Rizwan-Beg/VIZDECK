@@ -2,7 +2,10 @@ import { pointInPolygon, type FloorQuad, type Vec2 } from "./floorMath";
 
 export type OccludeClick = { x: number; y: number; add: boolean };
 
-const MAX_W = 480;
+// Retain enough detail for thin chair legs and the edge of a rug in contemporary
+// phone photos. The AI baseline is still the source of truth; this only controls
+// the client-side composite used for manual Under/Reveal corrections.
+const MAX_W = 1536;
 
 function floorPoly(q: FloorQuad): Vec2[] {
   return [q.nearLeft, q.nearRight, q.farRight, q.farLeft];

@@ -57,8 +57,8 @@ const ROOMS: Room[] = [
   {
     name: "Airy Contemporary Living Room",
     src: roomAiryLiving.src,
-    floor: { farLeft: { x: 0.2896, y: 0.59 }, farRight: { x: 0.7104, y: 0.59 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
-    floorSize: { widthFt: 8.1, depthFt: 9.8 },
+    floor: { farLeft: { x: 0.2996, y: 0.575 }, farRight: { x: 0.7004, y: 0.575 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
+    floorSize: { widthFt: 8.1, depthFt: 10.7 },
     occlusionMaskUrl: "/visualizer-masks/mask_0217bf885c574463a371f263f108fca5.png",
     floorSupportMaskUrl: "/visualizer-masks/floor_support_0217bf885c574463a371f263f108fca5.png",
     debugOverlayUrl: "/visualizer-masks/debug_0217bf885c574463a371f263f108fca5.jpg",
@@ -68,8 +68,8 @@ const ROOMS: Room[] = [
   {
     name: "Sunlit Neutral Living Room",
     src: roomSunlitNeutralLiving.src,
-    floor: { farLeft: { x: 0.2182, y: 0.77 }, farRight: { x: 0.7818, y: 0.77 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
-    floorSize: { widthFt: 8.6, depthFt: 7.2 },
+    floor: { farLeft: { x: 0.2349, y: 0.751 }, farRight: { x: 0.7651, y: 0.751 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
+    floorSize: { widthFt: 8.6, depthFt: 8.3 },
     occlusionMaskUrl: "/visualizer-masks/mask_bef54382c6b645b7850f0950a66ee315.png",
     floorSupportMaskUrl: "/visualizer-masks/floor_support_bef54382c6b645b7850f0950a66ee315.png",
     debugOverlayUrl: "/visualizer-masks/debug_bef54382c6b645b7850f0950a66ee315.jpg",
@@ -79,8 +79,8 @@ const ROOMS: Room[] = [
   {
     name: "Minimalist Warm Living Room",
     src: roomMinimalistWarmLiving.src,
-    floor: { farLeft: { x: 0.2577, y: 0.74 }, farRight: { x: 0.7423, y: 0.74 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
-    floorSize: { widthFt: 8.9, depthFt: 8.6 },
+    floor: { farLeft: { x: 0.2773, y: 0.719 }, farRight: { x: 0.7227, y: 0.719 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
+    floorSize: { widthFt: 8.9, depthFt: 10.1 },
     occlusionMaskUrl: "/visualizer-masks/mask_53c4c14906b1487ba1c6e3b27b71ca9a.png",
     floorSupportMaskUrl: "/visualizer-masks/floor_support_53c4c14906b1487ba1c6e3b27b71ca9a.png",
     debugOverlayUrl: "/visualizer-masks/debug_53c4c14906b1487ba1c6e3b27b71ca9a.jpg",
@@ -90,8 +90,8 @@ const ROOMS: Room[] = [
   {
     name: "Scandinavian Dining Room",
     src: roomScandinavianDining.src,
-    floor: { farLeft: { x: 0.3213, y: 0.565 }, farRight: { x: 0.6787, y: 0.565 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
-    floorSize: { widthFt: 9.6, depthFt: 14.6 },
+    floor: { farLeft: { x: 0.3297, y: 0.553 }, farRight: { x: 0.6703, y: 0.553 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
+    floorSize: { widthFt: 9.6, depthFt: 15.7 },
     occlusionMaskUrl: "/visualizer-masks/mask_d883fdd52ac94c3888396d06c929bee0.png",
     floorSupportMaskUrl: "/visualizer-masks/floor_support_d883fdd52ac94c3888396d06c929bee0.png",
     debugOverlayUrl: "/visualizer-masks/debug_d883fdd52ac94c3888396d06c929bee0.jpg",
@@ -101,8 +101,8 @@ const ROOMS: Room[] = [
   {
     name: "Walnut Dining Room",
     src: roomWalnutDining.src,
-    floor: { farLeft: { x: 0.2749, y: 0.695 }, farRight: { x: 0.7251, y: 0.695 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
-    floorSize: { widthFt: 10.9, depthFt: 11.6 },
+    floor: { farLeft: { x: 0.2791, y: 0.69 }, farRight: { x: 0.7209, y: 0.69 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
+    floorSize: { widthFt: 10.9, depthFt: 12.0 },
     occlusionMaskUrl: "/visualizer-masks/mask_db33b98370824c7e9654b9f28ce93ee2.png",
     floorSupportMaskUrl: "/visualizer-masks/floor_support_db33b98370824c7e9654b9f28ce93ee2.png",
     debugOverlayUrl: "/visualizer-masks/debug_db33b98370824c7e9654b9f28ce93ee2.jpg",
@@ -112,8 +112,8 @@ const ROOMS: Room[] = [
   {
     name: "Sunlit Beige Bedroom",
     src: roomSunlitBeigeBedroom.src,
-    floor: { farLeft: { x: 0.3283, y: 0.645 }, farRight: { x: 0.6717, y: 0.645 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
-    floorSize: { widthFt: 10.1, depthFt: 17.8 },
+    floor: { farLeft: { x: 0.3345, y: 0.638 }, farRight: { x: 0.6655, y: 0.638 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
+    floorSize: { widthFt: 10.1, depthFt: 18.8 },
     occlusionMaskUrl: "/visualizer-masks/mask_165e3788af3547c38dd403026485d206.png",
     floorSupportMaskUrl: "/visualizer-masks/floor_support_165e3788af3547c38dd403026485d206.png",
     debugOverlayUrl: "/visualizer-masks/debug_165e3788af3547c38dd403026485d206.jpg",
@@ -123,8 +123,8 @@ const ROOMS: Room[] = [
   {
     name: "Warm Minimalist Office",
     src: roomWarmMinimalistOffice.src,
-    floor: { farLeft: { x: 0.2594, y: 0.585 }, farRight: { x: 0.7406, y: 0.585 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
-    floorSize: { widthFt: 8.4, depthFt: 9.3 },
+    floor: { farLeft: { x: 0.2699, y: 0.567 }, farRight: { x: 0.7301, y: 0.567 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
+    floorSize: { widthFt: 8.4, depthFt: 10.2 },
     occlusionMaskUrl: "/visualizer-masks/mask_8f7663f320d647398fb9995afed5ea2e.png",
     floorSupportMaskUrl: "/visualizer-masks/floor_support_8f7663f320d647398fb9995afed5ea2e.png",
     debugOverlayUrl: "/visualizer-masks/debug_8f7663f320d647398fb9995afed5ea2e.jpg",
@@ -145,13 +145,13 @@ const ROOMS: Room[] = [
   {
     name: "Warm Walnut Living Room",
     src: roomWarmWalnutArchway.src,
-    floor: { farLeft: { x: 0.3388, y: 0.642 }, farRight: { x: 0.6001, y: 0.642 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
-    floorSize: { widthFt: 6.8, depthFt: 8.0 },
+    floor: { farLeft: { x: 0.3258, y: 0.622 }, farRight: { x: 0.6406, y: 0.622 }, nearRight: { x: 0.98, y: 0.995 }, nearLeft: { x: 0.02, y: 0.995 } },
+    floorSize: { widthFt: 7.5, depthFt: 14.5 },
     occlusionMaskUrl: "/visualizer-masks/mask_58ba68374ffe4b48ad9c2eb7e70b6b92.png",
     floorSupportMaskUrl: "/visualizer-masks/floor_support_58ba68374ffe4b48ad9c2eb7e70b6b92.png",
     debugOverlayUrl: "/visualizer-masks/debug_58ba68374ffe4b48ad9c2eb7e70b6b92.jpg",
     roomType: "Living Room",
-    suggestedPlacement: { x: 3.4, z: 3.9, w: 8.0, h: 10.0, rot: 0.0 },
+    suggestedPlacement: { x: 4.35, z: 7.2, w: 8.0, h: 10.0, rot: 0.0 },
   },
 ];
 
@@ -476,7 +476,7 @@ export default function RoomVisualizer({
       }
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 90000);
+      const timeoutId = setTimeout(() => controller.abort(), 180000);
       const resp = await fetch("/api/analyze-room", {
         method: "POST",
         body: formData,
@@ -596,14 +596,24 @@ export default function RoomVisualizer({
       );
     } catch (err: unknown) {
       if (reqSequence.current === currentReq) {
-        console.warn("AI Room Analysis warning, falling back to standard perspective quad:", err);
+        const errMsg = err instanceof Error ? err.message : "Room analysis timed out or failed";
+        console.warn("AI Room Analysis failed, falling back to standard perspective quad:", err);
         // Do NOT show the "No Room Floor Detected" modal on network timeouts or server delays.
         // The modal is strictly reserved for images verified to lack a floor.
         setIsScanning(false);
-        setAnalysisStatus("success");
+        setAnalysisStatus("error");
+        setAnalysisError(errMsg);
+        setAiOcclusionUrl(null);
+        setFloorSupportMaskUrl(null);
+        setOcclusion(null);
+        setHasExistingRug(false);
+        setExistingRugCorners(null);
         setFloor(defaultFloorQuad());
         setFloorSize({ widthFt: 9.2, depthFt: 10.5 });
-        toast("Standard room perspective active. You can place and position rugs freely.", T);
+        toast.error(`AI scan failed (${errMsg}). Using standard perspective — click Retry Analysis to re-scan.`, {
+          ...T,
+          duration: 6000,
+        });
       }
     }
   }, [floor, floorSize, occludeClicks, autoOcclude, rebuildMask, selectedId]);
@@ -913,8 +923,9 @@ export default function RoomVisualizer({
   };
 
   const uploadRoom = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.[0]) return;
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
     const url = URL.createObjectURL(file);
     const r: Room = {
       name: "Your Room",

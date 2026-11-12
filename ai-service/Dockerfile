@@ -11,8 +11,11 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Pre-download and cache SegFormer ADE20K model for offline/fast startup
-RUN python -c "from transformers import SegformerImageProcessor, SegformerForSemanticSegmentation; model_id='nvidia/segformer-b0-finetuned-ade-512-512'; SegformerImageProcessor.from_pretrained(model_id); SegformerForSemanticSegmentation.from_pretrained(model_id)" || true
+# Pre-download and cache ADE20K + SAM models for offline/fast startup
+RUN python -c "from transformers import OneFormerProcessor, OneFormerForUniversalSegmentation, SamProcessor, SamModel, SegformerImageProcessor, SegformerForSemanticSegmentation; \
+  of='shi-labs/oneformer_ade20k_swin_large'; OneFormerProcessor.from_pretrained(of); OneFormerForUniversalSegmentation.from_pretrained(of); \
+  sm='facebook/sam-vit-base'; SamProcessor.from_pretrained(sm); SamModel.from_pretrained(sm); \
+  sg='nvidia/segformer-b0-finetuned-ade-512-512'; SegformerImageProcessor.from_pretrained(sg); SegformerForSemanticSegmentation.from_pretrained(sg)" || true
 
 COPY . .
 

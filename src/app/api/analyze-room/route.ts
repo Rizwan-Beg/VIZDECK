@@ -1,13 +1,71 @@
 import { NextRequest, NextResponse } from "next/server";
-import { execFile } from "child_process";
+import { execFile, execFileSync } from "child_process";
 import { promisify } from "util";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 
-const execFileAsync = promisify(execFile);
+export const maxDuration = 180;
 
-async function runLocalCliAnalysis(buffer: Buffer, originalName: string) {
+// Keep every stage inside the request deadline. Previously the route could wait
+// 90 seconds for an offline service and then launch a local analysis allowed to
+// run another 180 seconds, guaranteeing that the browser timed out first.
+const ANALYSIS_BUDGET_MS = 172_000;
+const MIN_USEFUL_CLI_BUDGET_MS = 20_000;
+
+const execFileAsync = promisify(execFile);
+let cachedPythonBin: string | null = null;
+let cachedHasFullDeps = false;
+
+function resolveAnalysisPython(scriptPath: string): string {
+  if (
+    cachedPythonBin &&
+    cachedHasFullDeps &&
+    (cachedPythonBin === "python3" || fs.existsSync(cachedPythonBin))
+  ) {
+    return cachedPythonBin;
+  }
+
+  const aiServiceDir = path.dirname(scriptPath);
+  const candidates = Array.from(
+    new Set([
+      path.resolve(aiServiceDir, "venv/bin/python3"),
+      "/Library/Frameworks/Python.framework/Versions/3.12/bin/python3",
+      "/opt/homebrew/bin/python3",
+      "/usr/local/bin/python3",
+      "python3",
+    ])
+  );
+
+  for (const candidate of candidates) {
+    if (candidate !== "python3" && !fs.existsSync(candidate)) continue;
+    try {
+      execFileSync(
+        candidate,
+        [
+          "-c",
+          "import importlib.util, sys; sys.exit(0 if all(importlib.util.find_spec(m) for m in ('torch', 'transformers', 'cv2')) else 1)",
+        ],
+        {
+          stdio: "ignore",
+          timeout: 12000,
+        }
+      );
+      cachedPythonBin = candidate;
+      cachedHasFullDeps = true;
+      console.log(`[VIZDECK AI] Using Python interpreter: ${candidate}`);
+      return candidate;
+    } catch {
+      // Try the next interpreter.
+    }
+  }
+
+  const chosen = fs.existsSync(candidates[0]) ? candidates[0] : "python3";
+  console.warn(`[VIZDECK AI] No Python interpreter with room-analysis dependencies found; falling back to: ${chosen}`);
+  return chosen;
+}
+
+async function runLocalCliAnalysis(buffer: Buffer, originalName: string, timeoutMs: number) {
   if (process.env.DISABLE_LOCAL_AI_CLI === "true") {
     return null;
   }
@@ -39,13 +97,12 @@ async function runLocalCliAnalysis(buffer: Buffer, originalName: string) {
 
   await fs.promises.writeFile(tmpFilePath, buffer);
 
-  const venvPython = path.resolve(path.dirname(scriptPath), "venv/bin/python3");
-  const pythonBin = fs.existsSync(venvPython) ? venvPython : "python3";
+  const pythonBin = resolveAnalysisPython(scriptPath);
 
   try {
     const { stdout } = await execFileAsync(pythonBin, [scriptPath, tmpFilePath], {
       maxBuffer: 25 * 1024 * 1024,
-      timeout: 120000,
+      timeout: timeoutMs,
     });
 
     const lines = stdout.trim().split("\n");
@@ -72,6 +129,7 @@ async function runLocalCliAnalysis(buffer: Buffer, originalName: string) {
 
 export async function POST(req: NextRequest) {
   try {
+    const analysisStartedAt = Date.now();
     const formData = await req.formData();
 
     if (formData.has("room_path")) {
@@ -93,10 +151,9 @@ export async function POST(req: NextRequest) {
     }
 
     const inpaintExisting = formData.get("inpaint_existing_rug") === "true" ? "true" : "false";
-    const candidateEndpoints = [
-      process.env.VISUALIZER_API_URL ? `${process.env.VISUALIZER_API_URL.replace(/\/$/, "")}/api/analyze-room` : null,
-      "http://127.0.0.1:8000/api/analyze-room",
-    ].filter(Boolean) as string[];
+    const candidateEndpoints = process.env.VISUALIZER_API_URL
+      ? [`${process.env.VISUALIZER_API_URL.replace(/\/$/, "")}/api/analyze-room`]
+      : [];
 
     let analysis: Record<string, unknown> | null = null;
 
@@ -111,7 +168,7 @@ export async function POST(req: NextRequest) {
         const upstreamRes = await fetch(endpoint, {
           method: "POST",
           body: upstreamForm,
-          signal: AbortSignal.timeout(90000),
+          signal: AbortSignal.timeout(Math.max(1_000, Math.min(150_000, ANALYSIS_BUDGET_MS - (Date.now() - analysisStartedAt)))),
         });
 
         if (upstreamRes.ok) {
@@ -124,17 +181,27 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Fallback to local bundled AI analysis CLI if upstream service is not running
+    let lastCliError: string | null = null;
     if (!analysis) {
       try {
-        analysis = await runLocalCliAnalysis(fileBuffer, filename);
+        const remainingBudgetMs = ANALYSIS_BUDGET_MS - (Date.now() - analysisStartedAt);
+        if (remainingBudgetMs < MIN_USEFUL_CLI_BUDGET_MS) {
+          throw new Error("Room analysis service did not respond with enough time remaining for local fallback");
+        }
+        analysis = await runLocalCliAnalysis(fileBuffer, filename, remainingBudgetMs);
       } catch (cliErr: unknown) {
         console.error("Local VIZDECK AI CLI runner failed:", cliErr);
+        lastCliError = cliErr instanceof Error ? cliErr.message : String(cliErr);
       }
     }
 
     if (!analysis || typeof analysis !== "object") {
       return NextResponse.json(
-        { error: "AI room analysis service unavailable. Switching to perspective placement mode." },
+        {
+          error: lastCliError
+            ? `AI room analysis failed: ${lastCliError.slice(0, 160)}`
+            : "AI room analysis service unavailable. Switching to perspective placement mode.",
+        },
         { status: 503 }
       );
     }
@@ -162,4 +229,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-
