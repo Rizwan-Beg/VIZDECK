@@ -24,7 +24,7 @@ export async function GET(
     for (const upstreamUrl of candidateUrls) {
       try {
         const res = await fetch(upstreamUrl, {
-          signal: AbortSignal.timeout(3000),
+          signal: AbortSignal.timeout(10000),
           cache: "no-store",
         });
 

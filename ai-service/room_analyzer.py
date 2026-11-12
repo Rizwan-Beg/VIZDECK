@@ -95,20 +95,35 @@ def analyze_room_image(
     - Perspective-Aware Anchoring: Metric homography & vanishing ray convergence for physical product grounding.
     """
     import io
+    raw_bytes = None
     if isinstance(image_bytes, bytes):
-        pil_img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        raw_bytes = image_bytes
     elif hasattr(image_bytes, "read"):
         if hasattr(image_bytes, "seek"):
             image_bytes.seek(0)
-        raw_data = image_bytes.read()
-        pil_img = Image.open(io.BytesIO(raw_data)).convert("RGB")
-    else:
-        pil_img = Image.open(str(image_bytes)).convert("RGB")
+        raw_bytes = image_bytes.read()
+
+    try:
+        if raw_bytes is not None:
+            pil_img = Image.open(io.BytesIO(raw_bytes))
+        else:
+            pil_img = Image.open(str(image_bytes))
+        source_pil_img = ImageOps.exif_transpose(pil_img).convert("RGB")
+    except Exception as pil_err:
+        decoded_bgr = None
+        if raw_bytes is not None:
+            decoded_bgr = cv2.imdecode(np.frombuffer(raw_bytes, dtype=np.uint8), cv2.IMREAD_COLOR)
+        else:
+            decoded_bgr = cv2.imread(str(image_bytes), cv2.IMREAD_COLOR)
+        if decoded_bgr is None:
+            raise ValueError(
+                f"Unsupported or unreadable room image format ({pil_err}). Please upload JPG, PNG, WebP, or update Pillow (>=11.3) for AVIF."
+            )
+        source_pil_img = Image.fromarray(cv2.cvtColor(decoded_bgr, cv2.COLOR_BGR2RGB))
 
     # Keep an EXIF-normalized source copy. Inference can be downscaled for predictable
     # latency, but masks must be returned at the source image resolution so thin table
     # legs and rug edges do not turn into soft, misplaced cut-outs in WebGL.
-    source_pil_img = ImageOps.exif_transpose(pil_img)
     source_w, source_h = source_pil_img.size
     pil_img = source_pil_img
     max_proc_pixels = 1_700_000

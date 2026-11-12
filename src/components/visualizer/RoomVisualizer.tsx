@@ -452,6 +452,48 @@ export default function RoomVisualizer({
     if (!calibrating) scheduleMask(q, occludeClicks, autoOcclude);
   };
 
+  const prepareRoomUploadBlob = useCallback(async (sourceBlob: Blob, fileNameHint?: string): Promise<{ blob: Blob; filename: string }> => {
+    const lowerType = (sourceBlob.type || "").toLowerCase();
+    const lowerName = (fileNameHint || "").toLowerCase();
+    const isStandard = (lowerType === "image/jpeg" || lowerType === "image/jpg" || lowerType === "image/png")
+      && !/\.(avif|webp|heic|heif)$/i.test(lowerName);
+    const MAX_VERCEL_SAFE_BYTES = 3_500_000;
+
+    if (isStandard && sourceBlob.size <= MAX_VERCEL_SAFE_BYTES) {
+      return { blob: sourceBlob, filename: lowerType === "image/png" ? "room.png" : "room.jpg" };
+    }
+
+    const objUrl = URL.createObjectURL(sourceBlob);
+    try {
+      const img = await loadRoomImage(objUrl);
+      const srcW = img.naturalWidth || img.width;
+      const srcH = img.naturalHeight || img.height;
+      const MAX_DIM = 2048;
+      const scale = Math.max(srcW, srcH) > MAX_DIM ? MAX_DIM / Math.max(srcW, srcH) : 1;
+      const outW = Math.max(1, Math.round(srcW * scale));
+      const outH = Math.max(1, Math.round(srcH * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = outW;
+      canvas.height = outH;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas 2D unavailable");
+      ctx.drawImage(img, 0, 0, outW, outH);
+      const jpegBlob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob((b) => resolve(b), "image/jpeg", 0.92)
+      );
+      if (jpegBlob && jpegBlob.size > 0) {
+        return { blob: jpegBlob, filename: "room.jpg" };
+      }
+    } catch (convErr) {
+      console.warn("Browser image normalization skipped, uploading original file:", convErr);
+    } finally {
+      URL.revokeObjectURL(objUrl);
+    }
+
+    const fallbackExt = lowerName.match(/\.(png|jpg|jpeg|webp|avif)$/)?.[0] || ".jpg";
+    return { blob: sourceBlob, filename: `room${fallbackExt}` };
+  }, []);
+
   const triggerRoomAnalysis = useCallback(async (imageSrcOrBlob: string | Blob, roomName?: string) => {
     const currentReq = ++reqSequence.current;
     setAnalysisStatus("analyzing");
@@ -461,19 +503,25 @@ export default function RoomVisualizer({
 
     try {
       const formData = new FormData();
+      let rawBlob: Blob;
+      let nameHint = roomName;
       if (imageSrcOrBlob instanceof Blob) {
-        formData.append("room_image", imageSrcOrBlob, "room.jpg");
+        rawBlob = imageSrcOrBlob;
+        if ("name" in imageSrcOrBlob && typeof imageSrcOrBlob.name === "string") {
+          nameHint = imageSrcOrBlob.name;
+        }
       } else {
         const res = await fetch(imageSrcOrBlob);
         if (!res.ok) {
           throw new Error(`Failed to load room image (${res.status}): ${imageSrcOrBlob}`);
         }
-        const blob = await res.blob();
-        if (blob.size === 0) {
+        rawBlob = await res.blob();
+        if (rawBlob.size === 0) {
           throw new Error(`Room image blob is empty: ${imageSrcOrBlob}`);
         }
-        formData.append("room_image", blob, "room.jpg");
       }
+      const normalized = await prepareRoomUploadBlob(rawBlob, nameHint);
+      formData.append("room_image", normalized.blob, normalized.filename);
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 180000);
@@ -616,7 +664,7 @@ export default function RoomVisualizer({
         });
       }
     }
-  }, [floor, floorSize, occludeClicks, autoOcclude, rebuildMask, selectedId]);
+  }, [floor, floorSize, occludeClicks, autoOcclude, rebuildMask, selectedId, prepareRoomUploadBlob]);
 
   useEffect(() => {
     const catalogUrl = process.env.NEXT_PUBLIC_CATALOG_API_URL;

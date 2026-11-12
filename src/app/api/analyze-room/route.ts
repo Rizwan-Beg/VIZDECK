@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { execFile, execFileSync } from "child_process";
 import { promisify } from "util";
 import fs from "fs";
+import os from "os";
 import path from "path";
 import crypto from "crypto";
 
@@ -66,7 +67,7 @@ function resolveAnalysisPython(scriptPath: string): string {
 }
 
 async function runLocalCliAnalysis(buffer: Buffer, originalName: string, timeoutMs: number) {
-  if (process.env.DISABLE_LOCAL_AI_CLI === "true") {
+  if (process.env.DISABLE_LOCAL_AI_CLI === "true" || process.env.VERCEL === "1") {
     return null;
   }
 
@@ -89,9 +90,18 @@ async function runLocalCliAnalysis(buffer: Buffer, originalName: string, timeout
 
   const tmpId = crypto.randomUUID();
   const ext = path.extname(originalName) || ".jpg";
-  const uploadDir = path.resolve(path.dirname(scriptPath), "generated_images");
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
+  const preferredUploadDir = path.resolve(path.dirname(scriptPath), "generated_images");
+  let uploadDir = path.join(os.tmpdir(), "vizdeck-ai");
+  try {
+    if (!fs.existsSync(preferredUploadDir)) {
+      fs.mkdirSync(preferredUploadDir, { recursive: true });
+    }
+    fs.accessSync(preferredUploadDir, fs.constants.W_OK);
+    uploadDir = preferredUploadDir;
+  } catch {
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
   }
   const tmpFilePath = path.join(uploadDir, `room_upload_${tmpId}${ext}`);
 
@@ -156,6 +166,7 @@ export async function POST(req: NextRequest) {
       : [];
 
     let analysis: Record<string, unknown> | null = null;
+    let lastUpstreamError: string | null = null;
 
     // 1. Try forwarding to standalone VIZDECK AI service
     for (const endpoint of candidateEndpoints) {
@@ -175,14 +186,24 @@ export async function POST(req: NextRequest) {
           analysis = await upstreamRes.json();
           break;
         }
-      } catch {
-        // Upstream unavailable; fall through to local CLI analysis
+        let upstreamMsg = `HTTP ${upstreamRes.status}`;
+        try {
+          const errJson = await upstreamRes.json();
+          if (errJson?.error) upstreamMsg = `${upstreamMsg}: ${errJson.error}`;
+        } catch {
+          // ignore non-JSON body
+        }
+        lastUpstreamError = upstreamMsg;
+        console.warn(`[VIZDECK AI] Upstream ${endpoint} returned ${upstreamMsg}`);
+      } catch (upErr: unknown) {
+        lastUpstreamError = upErr instanceof Error ? upErr.message : String(upErr);
+        console.warn(`[VIZDECK AI] Upstream ${endpoint} failed:`, lastUpstreamError);
       }
     }
 
-    // 2. Fallback to local bundled AI analysis CLI if upstream service is not running
+    // 2. Fallback to local bundled AI analysis CLI if upstream service is not running (non-Vercel)
     let lastCliError: string | null = null;
-    if (!analysis) {
+    if (!analysis && process.env.VERCEL !== "1" && process.env.DISABLE_LOCAL_AI_CLI !== "true") {
       try {
         const remainingBudgetMs = ANALYSIS_BUDGET_MS - (Date.now() - analysisStartedAt);
         if (remainingBudgetMs < MIN_USEFUL_CLI_BUDGET_MS) {
@@ -196,10 +217,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (!analysis || typeof analysis !== "object") {
+      const detail = lastUpstreamError || lastCliError;
       return NextResponse.json(
         {
-          error: lastCliError
-            ? `AI room analysis failed: ${lastCliError.slice(0, 160)}`
+          error: detail
+            ? `AI room analysis failed: ${detail.slice(0, 180)}`
             : "AI room analysis service unavailable. Switching to perspective placement mode.",
         },
         { status: 503 }
